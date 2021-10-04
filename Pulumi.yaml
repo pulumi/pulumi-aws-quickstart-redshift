@@ -1,0 +1,3 @@
+name: pulumi-aws-quickstart-redshift
+runtime: go
+description: Deployment architecture for Redshift
