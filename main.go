@@ -193,7 +193,21 @@ func main() {
 		// })
 
 		redshiftLoggingS3Bucket, redshiftLoggingBucketErr := s3.NewBucket(ctx, "redshift-logging-bucket", &s3.BucketArgs{
-			// LifecycleRules: ,
+			LifecycleRules: s3.BucketLifecycleRuleArray{
+				s3.BucketLifecycleRuleArgs{
+					Id: pulumi.String("RedshiftLogsArchivingToGlacier"),
+					Expiration: s3.BucketLifecycleRuleExpirationArgs{
+						Days: pulumi.Int(30),
+					},
+					Enabled: pulumi.Bool(false),
+					Transitions: s3.BucketLifecycleRuleTransitionArray{
+						s3.BucketLifecycleRuleTransitionArgs{
+							StorageClass: pulumi.String("Glacier"),
+							Days:         pulumi.Int(14),
+						},
+					},
+				},
+			},
 			Tags: pulumi.StringMap{
 				"Name":              pulumi.String("allow_db_access"),
 				"Environment":       pulumi.String(pTagEnvironment),
@@ -219,24 +233,18 @@ func main() {
 							"Sid":    "IPAllow",
 							"Effect": "Allow",
 							"Principal": map[string]interface{}{
-								// @fixme - dynamic region
 								"AWS": "arn:aws:iam::" + redshiftLoggingAccountRegionIdMap("us-east-1") + ":user/logs",
 							},
-							"Action": "s3:GetBucketAcl",
-							// @fixme - string interpolation
+							"Action":   "s3:GetBucketAcl",
 							"Resource": bucketArn,
-							// "Resource": "*",
 						},
 						{
 							"Sid":    "IPAllow",
 							"Effect": "Allow",
 							"Principal": map[string]interface{}{
-								// @fixme - dynamic region
 								"AWS": "arn:aws:iam::" + redshiftLoggingAccountRegionIdMap("us-east-1") + ":user/logs",
 							},
-							"Action": "s3:PutObject",
-							// "Resource": "*",
-							// @fixme - string interpolation
+							"Action":   "s3:PutObject",
 							"Resource": bucketArn + "/AWSLogs/*",
 						},
 					},
