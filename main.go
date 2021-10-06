@@ -2,9 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"strconv"
 
+	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/cloudwatch"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/ec2"
+	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/glue"
+	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/redshift"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/s3"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/sns"
@@ -62,6 +66,8 @@ func redshiftLoggingAccountRegionIdMap(regionId string) string {
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
+		current, _ := aws.GetCallerIdentity(ctx, nil, nil)
+
 		// @fixme - not sure what the unique id is used for.
 		pGeneratedUniqueId := "tempid"
 
@@ -83,6 +89,8 @@ func main() {
 		pDbPort := 5432
 		pDatabaseName := "tempdbname"
 
+		pGlueCatalogDatabase := "tempGlueCatalogDatabase"
+
 		pDbAccessCidr := "0.0.0.0/0"
 
 		//@fixme - replace these fields with secret inputs
@@ -99,8 +107,14 @@ func main() {
 		// var pCustomSecurityGroupId *string = nil
 
 		pPubliclyAccessible := true
-
 		pMaxConcurrentCluster := "1"
+
+		pS3BucketForRedshiftIamRole := "temp-s3-bucket"
+
+		pRedshiftSingleNodeClusterCondition := "single-node" // or multi-node
+
+		pNodeType := "dc2.large"
+		pMaintenanceWindow := "sat:05:00-sat:05:30"
 
 		/**
 		 * Redshift security group
@@ -184,13 +198,17 @@ func main() {
 			return redshiftClusterSubnetGroupErr
 		}
 
-		// glueCatalogDb, glueCatalogDbErr := glue.NewCatalogDatabase(ctx, "glue-catalog", &glue.CatalogDatabaseArgs{
-		// 	CatalogId: ctx.,
-		// 	TargetDatabase: glue.CatalogDatabaseTargetDatabaseArgs{
-		// 		CatalogId: pulumi.String("temp"),
-		// 		DatabaseName: ,
-		// 	}
-		// })
+		catalogDatabase, catalogDatabaseErr := glue.NewCatalogDatabase(ctx, "glue-catalog", &glue.CatalogDatabaseArgs{
+			CatalogId: pulumi.String(current.AccountId),
+			TargetDatabase: glue.CatalogDatabaseTargetDatabaseArgs{
+				CatalogId:    pulumi.String(current.AccountId),
+				DatabaseName: pulumi.String(pGlueCatalogDatabase),
+			},
+		})
+
+		if nil != catalogDatabaseErr {
+			return catalogDatabaseErr
+		}
 
 		redshiftLoggingS3Bucket, redshiftLoggingBucketErr := s3.NewBucket(ctx, "redshift-logging-bucket", &s3.BucketArgs{
 			LifecycleRules: s3.BucketLifecycleRuleArray{
@@ -202,7 +220,7 @@ func main() {
 					Enabled: pulumi.Bool(false),
 					Transitions: s3.BucketLifecycleRuleTransitionArray{
 						s3.BucketLifecycleRuleTransitionArgs{
-							StorageClass: pulumi.String("Glacier"),
+							StorageClass: pulumi.String("GLACIER"),
 							Days:         pulumi.Int(14),
 						},
 					},
@@ -227,10 +245,10 @@ func main() {
 			jsonBucketPolicy, jsonBucketPolicyErr := json.Marshal(
 				(map[string]interface{}{
 					"Version": "2012-10-17",
-					"Id":      "MYBUCKETPOLICY",
+					"Id":      "RedshiftLoggingS3BucketPolicy",
 					"Statement": []map[string]interface{}{
 						{
-							"Sid":    "IPAllow",
+							"Sid":    "GetBucketAcl",
 							"Effect": "Allow",
 							"Principal": map[string]interface{}{
 								"AWS": "arn:aws:iam::" + redshiftLoggingAccountRegionIdMap("us-east-1") + ":user/logs",
@@ -239,7 +257,7 @@ func main() {
 							"Resource": bucketArn,
 						},
 						{
-							"Sid":    "IPAllow",
+							"Sid":    "PutLogs",
 							"Effect": "Allow",
 							"Principal": map[string]interface{}{
 								"AWS": "arn:aws:iam::" + redshiftLoggingAccountRegionIdMap("us-east-1") + ":user/logs",
@@ -263,15 +281,112 @@ func main() {
 			return redshiftLoggingS3BucketPolicyErr
 		}
 
-		pRedshiftSingleNodeClusterCondition := "single-node" // or multi-node
+		/************************************************
+		 * IAM Redshift Role
+		 ************************************************/
 
-		pNodeType := "dc2.large"
-		pMaintenanceWindow := "sat:05:00-sat:05:30"
+		assumeRolePolicyString, assumeRolePolicyStringErr := json.Marshal(
+			map[string]interface{}{
+				"Version": "2012-10-17",
+				"Statement": []map[string]interface{}{
+					{
+						"Action": "sts:AssumeRole",
+						"Effect": "Allow",
+						"Sid":    "",
+						"Principal": map[string]interface{}{
+							"Service": []string{
+								"redshift.amazonaws.com",
+								"glue.amazonaws.com",
+							},
+						},
+					},
+				},
+			},
+		)
+
+		if assumeRolePolicyStringErr != nil {
+			return assumeRolePolicyStringErr
+		}
+
+		iamRolePolicy, _ := json.Marshal(
+			(map[string]interface{}{
+				"Version": "2012-10-17",
+				"Id":      "",
+				"Statement": []map[string]interface{}{
+					{
+						"Effect":   "Allow",
+						"Sid":      "",
+						"Resource": "*",
+						"Action": []string{
+							"glue:CreateDatabase",
+							"glue:DeleteDatabase",
+							"glue:GetDatabase",
+							"glue:GetDatabases",
+							"glue:UpdateDatabase",
+							"glue:CreateTable",
+							"glue:DeleteTable",
+							"glue:BatchDeleteTable",
+							"glue:UpdateTable",
+							"glue:GetTable",
+							"glue:GetTables",
+							"glue:BatchCreatePartition",
+							"glue:CreatePartition",
+							"glue:DeletePartition",
+							"glue:BatchDeletePartition",
+							"glue:UpdatePartition",
+							"glue:GetPartition",
+							"glue:GetPartitions",
+							"glue:BatchGetPartition",
+							"logs:*",
+						},
+					},
+					{
+						"Effect": "Allow",
+						"Action": []string{
+							"glue:CreateDatabase",
+							"glue:DeleteDatabase",
+							"s3:GetBucketLocation",
+							"s3:GetObject",
+							"s3:ListMultipartUploadParts",
+							"s3:ListBucket",
+							"s3:ListBucketMultipartUploads",
+						},
+						"Resource": []string{
+							"arn:aws:s3:::" + pS3BucketForRedshiftIamRole,
+							"arn:aws:s3:::" + pS3BucketForRedshiftIamRole + "/*",
+						},
+					},
+				},
+			}),
+		)
+
+		redshiftIamRole, _ := iam.NewRole(ctx, "redshift-iam-role", &iam.RoleArgs{
+			Path:             pulumi.String('/'),
+			AssumeRolePolicy: pulumi.String(string(assumeRolePolicyString)),
+			// InlinePolicies: iam.RoleInlinePolicyArray{
+			// 	iam.RoleInlinePolicyArgs{
+			// 		Policy: pulumi.String(iamRolePolicy),
+			// 	},
+			// },
+		})
+
+		redshiftPolicy, _ := iam.NewPolicy(ctx, "redshift-policy", &iam.PolicyArgs{
+			Policy: pulumi.String(iamRolePolicy),
+		})
+
+		rolePolicyAttachment, rolePolicyAttachmentErr := iam.NewRolePolicyAttachment(ctx, "redshift-iam-role-policy-attachment", &iam.RolePolicyAttachmentArgs{
+			Role:      redshiftIamRole.ID(),
+			PolicyArn: redshiftPolicy.Arn,
+		})
+
+		if rolePolicyAttachmentErr != nil {
+			return rolePolicyAttachmentErr
+		}
 
 		redshiftCluster, redshiftClusterErr := redshift.NewCluster(ctx, "redshift-cluster", &redshift.ClusterArgs{
 			ClusterType:       pulumi.String(pRedshiftSingleNodeClusterCondition),
 			ClusterIdentifier: pulumi.String(pDatabaseName + pGeneratedUniqueId),
-			// NumberOfNodes: ,
+			// NumberOfNodes: pulumi.Int(num),
 			NodeType:     pulumi.String(pNodeType),
 			DatabaseName: pulumi.String(pDatabaseName),
 			// kmsKeyId
@@ -296,8 +411,9 @@ func main() {
 
 			// @fixme - remove this line, or add it only for dev environment
 			SkipFinalSnapshot: pulumi.Bool(true),
-			// IamRoles
-
+			IamRoles: pulumi.StringArray{
+				redshiftIamRole.ID(),
+			},
 			Tags: pulumi.StringMap{
 				"Name":              pulumi.String("Redshift Cluster"),
 				"Environment":       pulumi.String(pTagEnvironment),
@@ -305,7 +421,7 @@ func main() {
 				"Confidentiality":   pulumi.String(pTagConfidentiality),
 				"Compliance":        pulumi.String(pTagCompliance),
 			},
-		})
+		}, pulumi.DependsOn([]pulumi.Resource{rolePolicyAttachment}))
 
 		if redshiftClusterErr != nil {
 			return redshiftClusterErr
@@ -369,16 +485,21 @@ func main() {
 			return highCpuUtilizationAlarmErr
 		}
 
-		// ctx.Export("StackName", pulumi.String("@todo"))
+		psqlAccessCommand := redshiftCluster.Endpoint.ApplyT(func(_arg interface{}) string {
+			address := _arg.(string)
+			return "psql -h " + address + " -p " + strconv.Itoa(pDbPort) + " -U " + pDbMasterUsername + " -d " + pDatabaseName
+		})
+
+		ctx.Export("StackName", pulumi.String(ctx.Stack()))
 		ctx.Export("RedshiftClusterEndpoint", redshiftCluster.Endpoint)
 		ctx.Export("RedshiftPort", redshiftCluster.Port)
 		ctx.Export("RedshiftCluster", redshiftCluster.ID())
 		ctx.Export("RedshiftParameterGroupName", redshiftClusterParameterGroup.Name)
 		ctx.Export("RedshiftDatabaseName", redshiftCluster.DatabaseName)
 		ctx.Export("RedshiftUsername", pulumi.String(pDbMasterUsername))
-		// ctx.Export("RedshiftClusterIAMRole", pulumi.String("@todo"))
-		// ctx.Export("GlueCatalogDbName", pulumi.String("@todo"))
-		// ctx.Export("PSQLCommand", pulumi.String("@todo"))
+		ctx.Export("RedshiftClusterIAMRole", redshiftIamRole.Arn)
+		ctx.Export("GlueCatalogDbName", catalogDatabase.Arn)
+		ctx.Export("PSQLCommandLine", psqlAccessCommand)
 
 		return nil
 	})
