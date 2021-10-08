@@ -257,6 +257,56 @@ func createRedshiftSpectrumIAMRole(ctx *pulumi.Context, s3BucketForRedshiftSpect
 	return redshiftIamRole, nil
 }
 
+/**
+ * Create alarms for the redshift cluster
+ */
+func createAlarms(ctx *pulumi.Context, snsTopicSubscription *sns.TopicSubscription, redshiftCluster *redshift.Cluster) (*cloudwatch.MetricAlarm, *cloudwatch.MetricAlarm, error) {
+
+	diskSpaceUsageAlarm, diskSpaceUsedAlarmErr := cloudwatch.NewMetricAlarm(ctx, "disk-space-used-alarm", &cloudwatch.MetricAlarmArgs{
+		ActionsEnabled:   pulumi.Bool(true),
+		AlarmActions:     pulumi.Array{snsTopicSubscription.ID()},
+		AlarmDescription: pulumi.String("PercentageDiskSpaceUsed"),
+		Dimensions: pulumi.StringMap{
+			"ClusterIdentifier": redshiftCluster.ID(),
+		},
+		MetricName:         pulumi.String("CPUUtilization"),
+		Statistic:          pulumi.String("Average"),
+		Namespace:          pulumi.String("AWS/Redshift"),
+		Threshold:          pulumi.Float64Ptr(65),
+		Unit:               pulumi.String("Percent"),
+		ComparisonOperator: pulumi.String("GreaterThanThreshold"),
+		Period:             pulumi.Int(300),
+		EvaluationPeriods:  pulumi.Int(3),
+	})
+
+	if diskSpaceUsedAlarmErr != nil {
+		return nil, nil, diskSpaceUsedAlarmErr
+	}
+
+	highCpuUtilizationAlarm, highCpuUtilizationAlarmErr := cloudwatch.NewMetricAlarm(ctx, "high-cpu-utilization-alarm", &cloudwatch.MetricAlarmArgs{
+		ActionsEnabled:   pulumi.Bool(true),
+		AlarmActions:     pulumi.Array{snsTopicSubscription.ID()},
+		AlarmDescription: pulumi.String("PercentageDiskSpaceUsed"),
+		Dimensions: pulumi.StringMap{
+			"ClusterIdentifier": redshiftCluster.ID(),
+		},
+		MetricName:         pulumi.String("High-CPUUtilization"),
+		Statistic:          pulumi.String("Average"),
+		Namespace:          pulumi.String("AWS/Redshift"),
+		Threshold:          pulumi.Float64Ptr(95),
+		Unit:               pulumi.String("Percent"),
+		ComparisonOperator: pulumi.String("GreaterThanThreshold"),
+		Period:             pulumi.Int(300),
+		EvaluationPeriods:  pulumi.Int(3),
+	})
+
+	if highCpuUtilizationAlarmErr != nil {
+		return nil, nil, highCpuUtilizationAlarmErr
+	}
+
+	return diskSpaceUsageAlarm, highCpuUtilizationAlarm, nil
+}
+
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 		current, _ := aws.GetCallerIdentity(ctx, nil, nil)
@@ -506,46 +556,10 @@ func main() {
 			return snsTopicSubscriptionErr
 		}
 
-		_, diskSpaceUsedAlarmErr := cloudwatch.NewMetricAlarm(ctx, "disk-space-used-alarm", &cloudwatch.MetricAlarmArgs{
-			ActionsEnabled:   pulumi.Bool(true),
-			AlarmActions:     pulumi.Array{snsTopicSubscription.ID()},
-			AlarmDescription: pulumi.String("PercentageDiskSpaceUsed"),
-			Dimensions: pulumi.StringMap{
-				"ClusterIdentifier": redshiftCluster.ID(),
-			},
-			MetricName:         pulumi.String("CPUUtilization"),
-			Statistic:          pulumi.String("Average"),
-			Namespace:          pulumi.String("AWS/Redshift"),
-			Threshold:          pulumi.Float64Ptr(65),
-			Unit:               pulumi.String("Percent"),
-			ComparisonOperator: pulumi.String("GreaterThanThreshold"),
-			Period:             pulumi.Int(300),
-			EvaluationPeriods:  pulumi.Int(3),
-		})
+		_, _, createAlarmsErr := createAlarms(ctx, snsTopicSubscription, redshiftCluster)
 
-		if diskSpaceUsedAlarmErr != nil {
-			return diskSpaceUsedAlarmErr
-		}
-
-		_, highCpuUtilizationAlarmErr := cloudwatch.NewMetricAlarm(ctx, "high-cpu-utilization-alarm", &cloudwatch.MetricAlarmArgs{
-			ActionsEnabled:   pulumi.Bool(true),
-			AlarmActions:     pulumi.Array{snsTopicSubscription.ID()},
-			AlarmDescription: pulumi.String("PercentageDiskSpaceUsed"),
-			Dimensions: pulumi.StringMap{
-				"ClusterIdentifier": redshiftCluster.ID(),
-			},
-			MetricName:         pulumi.String("High-CPUUtilization"),
-			Statistic:          pulumi.String("Average"),
-			Namespace:          pulumi.String("AWS/Redshift"),
-			Threshold:          pulumi.Float64Ptr(95),
-			Unit:               pulumi.String("Percent"),
-			ComparisonOperator: pulumi.String("GreaterThanThreshold"),
-			Period:             pulumi.Int(300),
-			EvaluationPeriods:  pulumi.Int(3),
-		})
-
-		if highCpuUtilizationAlarmErr != nil {
-			return highCpuUtilizationAlarmErr
+		if nil != createAlarmsErr {
+			return createAlarmsErr
 		}
 
 		psqlAccessCommand := redshiftCluster.Endpoint.ApplyT(func(_arg interface{}) string {
