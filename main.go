@@ -64,6 +64,199 @@ func redshiftLoggingAccountRegionIdMap(regionId string) string {
 	return "xx"
 }
 
+type Tags struct {
+	Environment       string
+	ProjectCostCenter string
+	Confidentiality   string
+	Compliance        string
+}
+
+/*******************************
+ * REDSHIFT LOGGING ACCESS
+ *******************************/
+/**
+ * Create a bucket for redshift to write logs to.
+ */
+func createLoggingBucket(ctx *pulumi.Context, tags Tags) (*s3.Bucket, error) {
+
+	redshiftLoggingS3Bucket, redshiftLoggingBucketErr := s3.NewBucket(ctx, "redshift-logging-bucket", &s3.BucketArgs{
+		LifecycleRules: s3.BucketLifecycleRuleArray{
+			s3.BucketLifecycleRuleArgs{
+				Id: pulumi.String("RedshiftLogsArchivingToGlacier"),
+				Expiration: s3.BucketLifecycleRuleExpirationArgs{
+					Days: pulumi.Int(30),
+				},
+				Enabled: pulumi.Bool(false),
+				Transitions: s3.BucketLifecycleRuleTransitionArray{
+					s3.BucketLifecycleRuleTransitionArgs{
+						StorageClass: pulumi.String("GLACIER"),
+						Days:         pulumi.Int(14),
+					},
+				},
+			},
+		},
+		Tags: pulumi.StringMap{
+			"Name":              pulumi.String("allow_db_access"),
+			"Environment":       pulumi.String(tags.Environment),
+			"ProjectCostCenter": pulumi.String(tags.ProjectCostCenter),
+			"Confidentiality":   pulumi.String(tags.Confidentiality),
+			"Compliance":        pulumi.String(tags.Compliance),
+		},
+	})
+
+	if redshiftLoggingBucketErr != nil {
+		return nil, redshiftLoggingBucketErr
+	}
+
+	bucketPolicyString := redshiftLoggingS3Bucket.Arn.ApplyT(func(_args interface{}) (string, error) {
+		bucketArn := _args.(string)
+
+		jsonBucketPolicy, jsonBucketPolicyErr := json.Marshal(
+			(map[string]interface{}{
+				"Version": "2012-10-17",
+				"Id":      "RedshiftLoggingS3BucketPolicy",
+				"Statement": []map[string]interface{}{
+					{
+						"Sid":    "GetBucketAcl",
+						"Effect": "Allow",
+						"Principal": map[string]interface{}{
+							// @fixme - region
+							"AWS": "arn:aws:iam::" + redshiftLoggingAccountRegionIdMap("us-east-1") + ":user/logs",
+						},
+						"Action":   "s3:GetBucketAcl",
+						"Resource": bucketArn,
+					},
+					{
+						"Sid":    "PutLogs",
+						"Effect": "Allow",
+						"Principal": map[string]interface{}{
+							// @fixme - region
+							"AWS": "arn:aws:iam::" + redshiftLoggingAccountRegionIdMap("us-east-1") + ":user/logs",
+						},
+						"Action":   "s3:PutObject",
+						"Resource": bucketArn + "/AWSLogs/*",
+					},
+				},
+			}),
+		)
+
+		return string(jsonBucketPolicy), jsonBucketPolicyErr
+	})
+
+	_, redshiftLoggingS3BucketPolicyErr := s3.NewBucketPolicy(ctx, "logging-bucket-policy", &s3.BucketPolicyArgs{
+		Bucket: redshiftLoggingS3Bucket.ID(),
+		Policy: bucketPolicyString,
+	})
+
+	if redshiftLoggingS3BucketPolicyErr != nil {
+		return nil, redshiftLoggingS3BucketPolicyErr
+	}
+
+	return redshiftLoggingS3Bucket, nil
+}
+
+/**********************
+ * END REDSHIFT LOGGING
+ *********************/
+
+/**
+ * Create a role for Redshift Spectrum and Glue to access the S3 bucket provided by the input parameter.
+ */
+func createRedshiftSpectrumIAMRole(ctx *pulumi.Context, s3BucketForRedshiftSpectrumIamRole string) (*iam.Role, error) {
+
+	iamRolePolicy, _ := json.Marshal(
+		(map[string]interface{}{
+			"Version": "2012-10-17",
+			"Id":      "",
+			"Statement": []map[string]interface{}{
+				{
+					"Effect":   "Allow",
+					"Sid":      "",
+					"Resource": "*",
+					"Action": []string{
+						"glue:CreateDatabase",
+						"glue:DeleteDatabase",
+						"glue:GetDatabase",
+						"glue:GetDatabases",
+						"glue:UpdateDatabase",
+						"glue:CreateTable",
+						"glue:DeleteTable",
+						"glue:BatchDeleteTable",
+						"glue:UpdateTable",
+						"glue:GetTable",
+						"glue:GetTables",
+						"glue:BatchCreatePartition",
+						"glue:CreatePartition",
+						"glue:DeletePartition",
+						"glue:BatchDeletePartition",
+						"glue:UpdatePartition",
+						"glue:GetPartition",
+						"glue:GetPartitions",
+						"glue:BatchGetPartition",
+						"logs:*",
+					},
+				},
+				{
+					"Effect": "Allow",
+					"Action": []string{
+						"glue:CreateDatabase",
+						"glue:DeleteDatabase",
+						"s3:GetBucketLocation",
+						"s3:GetObject",
+						"s3:ListMultipartUploadParts",
+						"s3:ListBucket",
+						"s3:ListBucketMultipartUploads",
+					},
+					"Resource": []string{
+						"arn:aws:s3:::" + s3BucketForRedshiftSpectrumIamRole,
+						"arn:aws:s3:::" + s3BucketForRedshiftSpectrumIamRole + "/*",
+					},
+				},
+			},
+		}),
+	)
+
+	/************************************************
+	 * IAM Redshift Role
+	 ************************************************/
+
+	assumeRolePolicyString, assumeRolePolicyStringErr := json.Marshal(
+		map[string]interface{}{
+			"Version": "2012-10-17",
+			"Statement": []map[string]interface{}{
+				{
+					"Action": "sts:AssumeRole",
+					"Effect": "Allow",
+					"Sid":    "",
+					"Principal": map[string]interface{}{
+						"Service": []string{
+							"redshift.amazonaws.com",
+							"glue.amazonaws.com",
+						},
+					},
+				},
+			},
+		},
+	)
+
+	if assumeRolePolicyStringErr != nil {
+		return nil, assumeRolePolicyStringErr
+	}
+
+	redshiftIamRole, _ := iam.NewRole(ctx, "redshift-iam-role", &iam.RoleArgs{
+		Path:             pulumi.String('/'),
+		AssumeRolePolicy: pulumi.String(string(assumeRolePolicyString)),
+		InlinePolicies: iam.RoleInlinePolicyArray{
+			iam.RoleInlinePolicyArgs{
+				Name:   pulumi.String("redshift-access"),
+				Policy: pulumi.String(iamRolePolicy),
+			},
+		},
+	})
+
+	return redshiftIamRole, nil
+}
+
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 		current, _ := aws.GetCallerIdentity(ctx, nil, nil)
@@ -89,11 +282,13 @@ func main() {
 		pDbPort := 5432
 		pDatabaseName := "tempdbname"
 
+		pNumberNodes := 1
+		pEnableLogging := false
+
 		pGlueCatalogDatabase := "tempGlueCatalogDatabase"
 
 		pDbAccessCidr := "0.0.0.0/0"
 
-		//@fixme - replace these fields with secret inputs
 		pDbMasterUsername := "tempuser"
 		pDbMasterUserPassword := "Temp-master-password-vnoxzghoahrtwfnoaovnasf12!"
 
@@ -102,6 +297,14 @@ func main() {
 		pTagProjectCostCenter := "dev"
 		pTagConfidentiality := "none"
 		pTagCompliance := "none"
+		// @todo - can the input just be this struct?
+		// @todo Do Nils need to be handled gracefully?
+		tags := Tags{
+			Environment:       pTagEnvironment,
+			ProjectCostCenter: pTagProjectCostCenter,
+			Confidentiality:   pTagConfidentiality,
+			Compliance:        pTagCompliance,
+		}
 
 		// "ID of the security group (e.g., sg-0234se). One will be created for you if left empty."
 		// var pCustomSecurityGroupId *string = nil
@@ -109,7 +312,7 @@ func main() {
 		pPubliclyAccessible := true
 		pMaxConcurrentCluster := "1"
 
-		pS3BucketForRedshiftIamRole := "temp-s3-bucket"
+		pS3BucketForRedshiftSpectrum := "example-bucket"
 
 		pRedshiftSingleNodeClusterCondition := "single-node" // or multi-node
 
@@ -146,13 +349,18 @@ func main() {
 			return dbSecurityGroupErr
 		}
 
+		enableUserActivityLogging := "false"
+		if pEnableLogging {
+			enableUserActivityLogging = "true"
+		}
+
 		redshiftClusterParameterGroup, redshiftClusterParameterGroupErr := redshift.NewParameterGroup(ctx, "cluster-paramter-group", &redshift.ParameterGroupArgs{
 			Description: pulumi.String("Redshift-Cluster-Parameter-Group-" + pGeneratedUniqueId),
 			Family:      pulumi.String("redshift-1.0"),
 			Parameters: redshift.ParameterGroupParameterArray{
 				redshift.ParameterGroupParameterArgs{
 					Name:  pulumi.String("enable_user_activity_logging"),
-					Value: pulumi.String("false"),
+					Value: pulumi.String(enableUserActivityLogging),
 				},
 				redshift.ParameterGroupParameterArgs{
 					Name:  pulumi.String("require_ssl"),
@@ -210,185 +418,45 @@ func main() {
 			return catalogDatabaseErr
 		}
 
-		redshiftLoggingS3Bucket, redshiftLoggingBucketErr := s3.NewBucket(ctx, "redshift-logging-bucket", &s3.BucketArgs{
-			LifecycleRules: s3.BucketLifecycleRuleArray{
-				s3.BucketLifecycleRuleArgs{
-					Id: pulumi.String("RedshiftLogsArchivingToGlacier"),
-					Expiration: s3.BucketLifecycleRuleExpirationArgs{
-						Days: pulumi.Int(30),
-					},
-					Enabled: pulumi.Bool(false),
-					Transitions: s3.BucketLifecycleRuleTransitionArray{
-						s3.BucketLifecycleRuleTransitionArgs{
-							StorageClass: pulumi.String("GLACIER"),
-							Days:         pulumi.Int(14),
-						},
-					},
-				},
-			},
-			Tags: pulumi.StringMap{
-				"Name":              pulumi.String("allow_db_access"),
-				"Environment":       pulumi.String(pTagEnvironment),
-				"ProjectCostCenter": pulumi.String(pTagProjectCostCenter),
-				"Confidentiality":   pulumi.String(pTagConfidentiality),
-				"Compliance":        pulumi.String(pTagCompliance),
-			},
-		})
+		var redshiftLoggingS3Bucket *s3.Bucket = nil
+		var redshiftLoggingS3BucketErr error
+		var redshiftLoggingInput *redshift.ClusterLoggingArgs = nil
 
-		if redshiftLoggingBucketErr != nil {
-			return redshiftLoggingBucketErr
+		if pEnableLogging {
+			redshiftLoggingS3Bucket, redshiftLoggingS3BucketErr = createLoggingBucket(ctx, tags)
+
+			redshiftLoggingInput = &redshift.ClusterLoggingArgs{
+				BucketName:  redshiftLoggingS3Bucket.ID(),
+				Enable:      pulumi.Bool(pEnableLogging),
+				S3KeyPrefix: pulumi.String("AWSLogs"),
+			}
+
+			if redshiftLoggingS3BucketErr != nil {
+				return redshiftLoggingS3BucketErr
+			}
 		}
 
-		bucketPolicyString := redshiftLoggingS3Bucket.Arn.ApplyT(func(_args interface{}) (string, error) {
-			bucketArn := _args.(string)
+		var redshiftIamRole *iam.Role = nil
+		var redshiftIamRoleErr error
+		var redshiftIamRolesInput pulumi.StringArray = nil
 
-			jsonBucketPolicy, jsonBucketPolicyErr := json.Marshal(
-				(map[string]interface{}{
-					"Version": "2012-10-17",
-					"Id":      "RedshiftLoggingS3BucketPolicy",
-					"Statement": []map[string]interface{}{
-						{
-							"Sid":    "GetBucketAcl",
-							"Effect": "Allow",
-							"Principal": map[string]interface{}{
-								"AWS": "arn:aws:iam::" + redshiftLoggingAccountRegionIdMap("us-east-1") + ":user/logs",
-							},
-							"Action":   "s3:GetBucketAcl",
-							"Resource": bucketArn,
-						},
-						{
-							"Sid":    "PutLogs",
-							"Effect": "Allow",
-							"Principal": map[string]interface{}{
-								"AWS": "arn:aws:iam::" + redshiftLoggingAccountRegionIdMap("us-east-1") + ":user/logs",
-							},
-							"Action":   "s3:PutObject",
-							"Resource": bucketArn + "/AWSLogs/*",
-						},
-					},
-				}),
-			)
+		// @fixme - nillable string on input?
+		if pS3BucketForRedshiftSpectrum != "bypass" {
+			redshiftIamRole, redshiftIamRoleErr = createRedshiftSpectrumIAMRole(ctx, pS3BucketForRedshiftSpectrum)
 
-			return string(jsonBucketPolicy), jsonBucketPolicyErr
-		})
+			if redshiftIamRoleErr != nil {
+				return redshiftIamRoleErr
+			}
 
-		_, redshiftLoggingS3BucketPolicyErr := s3.NewBucketPolicy(ctx, "logging-bucket-policy", &s3.BucketPolicyArgs{
-			Bucket: redshiftLoggingS3Bucket.ID(),
-			Policy: bucketPolicyString,
-		})
-
-		if redshiftLoggingS3BucketPolicyErr != nil {
-			return redshiftLoggingS3BucketPolicyErr
-		}
-
-		/************************************************
-		 * IAM Redshift Role
-		 ************************************************/
-
-		assumeRolePolicyString, assumeRolePolicyStringErr := json.Marshal(
-			map[string]interface{}{
-				"Version": "2012-10-17",
-				"Statement": []map[string]interface{}{
-					{
-						"Action": "sts:AssumeRole",
-						"Effect": "Allow",
-						"Sid":    "",
-						"Principal": map[string]interface{}{
-							"Service": []string{
-								"redshift.amazonaws.com",
-								"glue.amazonaws.com",
-							},
-						},
-					},
-				},
-			},
-		)
-
-		if assumeRolePolicyStringErr != nil {
-			return assumeRolePolicyStringErr
-		}
-
-		iamRolePolicy, _ := json.Marshal(
-			(map[string]interface{}{
-				"Version": "2012-10-17",
-				"Id":      "",
-				"Statement": []map[string]interface{}{
-					{
-						"Effect":   "Allow",
-						"Sid":      "",
-						"Resource": "*",
-						"Action": []string{
-							"glue:CreateDatabase",
-							"glue:DeleteDatabase",
-							"glue:GetDatabase",
-							"glue:GetDatabases",
-							"glue:UpdateDatabase",
-							"glue:CreateTable",
-							"glue:DeleteTable",
-							"glue:BatchDeleteTable",
-							"glue:UpdateTable",
-							"glue:GetTable",
-							"glue:GetTables",
-							"glue:BatchCreatePartition",
-							"glue:CreatePartition",
-							"glue:DeletePartition",
-							"glue:BatchDeletePartition",
-							"glue:UpdatePartition",
-							"glue:GetPartition",
-							"glue:GetPartitions",
-							"glue:BatchGetPartition",
-							"logs:*",
-						},
-					},
-					{
-						"Effect": "Allow",
-						"Action": []string{
-							"glue:CreateDatabase",
-							"glue:DeleteDatabase",
-							"s3:GetBucketLocation",
-							"s3:GetObject",
-							"s3:ListMultipartUploadParts",
-							"s3:ListBucket",
-							"s3:ListBucketMultipartUploads",
-						},
-						"Resource": []string{
-							"arn:aws:s3:::" + pS3BucketForRedshiftIamRole,
-							"arn:aws:s3:::" + pS3BucketForRedshiftIamRole + "/*",
-						},
-					},
-				},
-			}),
-		)
-
-		redshiftIamRole, _ := iam.NewRole(ctx, "redshift-iam-role", &iam.RoleArgs{
-			Path:             pulumi.String('/'),
-			AssumeRolePolicy: pulumi.String(string(assumeRolePolicyString)),
-			// InlinePolicies: iam.RoleInlinePolicyArray{
-			// 	iam.RoleInlinePolicyArgs{
-			// 		Policy: pulumi.String(iamRolePolicy),
-			// 	},
-			// },
-		})
-
-		redshiftPolicy, _ := iam.NewPolicy(ctx, "redshift-policy", &iam.PolicyArgs{
-			Policy: pulumi.String(iamRolePolicy),
-		})
-
-		rolePolicyAttachment, rolePolicyAttachmentErr := iam.NewRolePolicyAttachment(ctx, "redshift-iam-role-policy-attachment", &iam.RolePolicyAttachmentArgs{
-			Role:      redshiftIamRole.ID(),
-			PolicyArn: redshiftPolicy.Arn,
-		})
-
-		if rolePolicyAttachmentErr != nil {
-			return rolePolicyAttachmentErr
+			redshiftIamRolesInput = pulumi.StringArray{redshiftIamRole.ID()}
 		}
 
 		redshiftCluster, redshiftClusterErr := redshift.NewCluster(ctx, "redshift-cluster", &redshift.ClusterArgs{
 			ClusterType:       pulumi.String(pRedshiftSingleNodeClusterCondition),
 			ClusterIdentifier: pulumi.String(pDatabaseName + pGeneratedUniqueId),
-			// NumberOfNodes: pulumi.Int(num),
-			NodeType:     pulumi.String(pNodeType),
-			DatabaseName: pulumi.String(pDatabaseName),
+			NumberOfNodes:     pulumi.Int(pNumberNodes),
+			NodeType:          pulumi.String(pNodeType),
+			DatabaseName:      pulumi.String(pDatabaseName),
 			// kmsKeyId
 			// Encrypted
 			Port:                      pulumi.Int(pDbPort),
@@ -402,18 +470,12 @@ func main() {
 			AutomatedSnapshotRetentionPeriod: pulumi.Int(8),
 			PubliclyAccessible:               pulumi.Bool(pPubliclyAccessible),
 			ClusterSubnetGroupName:           redshiftClusterSubnetGroup.Name,
-			Logging: redshift.ClusterLoggingArgs{
-				BucketName: redshiftLoggingS3Bucket.ID(),
-				// @fixme - make this a parameter
-				Enable:      pulumi.Bool(true),
-				S3KeyPrefix: pulumi.String("AWSLogs"),
-			},
+
+			Logging: redshiftLoggingInput,
 
 			// @fixme - remove this line, or add it only for dev environment
 			SkipFinalSnapshot: pulumi.Bool(true),
-			IamRoles: pulumi.StringArray{
-				redshiftIamRole.ID(),
-			},
+			IamRoles:          redshiftIamRolesInput,
 			Tags: pulumi.StringMap{
 				"Name":              pulumi.String("Redshift Cluster"),
 				"Environment":       pulumi.String(pTagEnvironment),
@@ -421,7 +483,8 @@ func main() {
 				"Confidentiality":   pulumi.String(pTagConfidentiality),
 				"Compliance":        pulumi.String(pTagCompliance),
 			},
-		}, pulumi.DependsOn([]pulumi.Resource{rolePolicyAttachment}))
+			// }, pulumi.DependsOn([]pulumi.Resource{redshiftIamRole}))
+		})
 
 		if redshiftClusterErr != nil {
 			return redshiftClusterErr
@@ -497,7 +560,11 @@ func main() {
 		ctx.Export("RedshiftParameterGroupName", redshiftClusterParameterGroup.Name)
 		ctx.Export("RedshiftDatabaseName", redshiftCluster.DatabaseName)
 		ctx.Export("RedshiftUsername", pulumi.String(pDbMasterUsername))
-		ctx.Export("RedshiftClusterIAMRole", redshiftIamRole.Arn)
+
+		if nil != redshiftIamRole {
+			ctx.Export("RedshiftClusterIAMRole", redshiftIamRole.Arn)
+		}
+
 		ctx.Export("GlueCatalogDbName", catalogDatabase.Arn)
 		ctx.Export("PSQLCommandLine", psqlAccessCommand)
 
