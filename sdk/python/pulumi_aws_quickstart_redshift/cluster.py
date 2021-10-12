@@ -14,7 +14,7 @@ __all__ = ['ClusterArgs', 'Cluster']
 class ClusterArgs:
     def __init__(__self__, *,
                  db_access_cidr_block: str,
-                 db_master_password: str,
+                 db_master_password: pulumi.Input[str],
                  db_master_username: str,
                  db_name: str,
                  db_node_type: str,
@@ -33,7 +33,7 @@ class ClusterArgs:
         The set of arguments for constructing a Cluster resource.
         :param str db_access_cidr_block: Allowed CIDR block in the format x.x.x.x/x for external SSH
                access to the cluster.
-        :param str db_master_password: The password that is associated with the master user account
+        :param pulumi.Input[str] db_master_password: The password that is associated with the master user account
                for the cluster that is being created. Must have at least 8
                characters and no more than 64 characters, and must include 1
                uppercase letter, 1 lowercase letter, 1 number, and 1 symbol
@@ -108,7 +108,7 @@ class ClusterArgs:
 
     @property
     @pulumi.getter(name="dbMasterPassword")
-    def db_master_password(self) -> str:
+    def db_master_password(self) -> pulumi.Input[str]:
         """
         The password that is associated with the master user account
         for the cluster that is being created. Must have at least 8
@@ -119,7 +119,7 @@ class ClusterArgs:
         return pulumi.get(self, "db_master_password")
 
     @db_master_password.setter
-    def db_master_password(self, value: str):
+    def db_master_password(self, value: pulumi.Input[str]):
         pulumi.set(self, "db_master_password", value)
 
     @property
@@ -314,7 +314,7 @@ class Cluster(pulumi.ComponentResource):
                  opts: Optional[pulumi.ResourceOptions] = None,
                  db_access_cidr_block: Optional[str] = None,
                  db_maintenance_window: Optional[str] = None,
-                 db_master_password: Optional[str] = None,
+                 db_master_password: Optional[pulumi.Input[str]] = None,
                  db_master_username: Optional[str] = None,
                  db_name: Optional[str] = None,
                  db_node_type: Optional[str] = None,
@@ -336,7 +336,7 @@ class Cluster(pulumi.ComponentResource):
         :param str db_access_cidr_block: Allowed CIDR block in the format x.x.x.x/x for external SSH
                access to the cluster.
         :param str db_maintenance_window: The maintenance window for the Redshift cluster. e.g 'sat:05:00-sat:05:30'
-        :param str db_master_password: The password that is associated with the master user account
+        :param pulumi.Input[str] db_master_password: The password that is associated with the master user account
                for the cluster that is being created. Must have at least 8
                characters and no more than 64 characters, and must include 1
                uppercase letter, 1 lowercase letter, 1 number, and 1 symbol
@@ -396,7 +396,7 @@ class Cluster(pulumi.ComponentResource):
                  opts: Optional[pulumi.ResourceOptions] = None,
                  db_access_cidr_block: Optional[str] = None,
                  db_maintenance_window: Optional[str] = None,
-                 db_master_password: Optional[str] = None,
+                 db_master_password: Optional[pulumi.Input[str]] = None,
                  db_master_username: Optional[str] = None,
                  db_name: Optional[str] = None,
                  db_node_type: Optional[str] = None,

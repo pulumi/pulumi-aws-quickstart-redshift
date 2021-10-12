@@ -22,6 +22,9 @@ func NewCluster(ctx *pulumi.Context,
 		return nil, errors.New("missing one or more required arguments")
 	}
 
+	if args.DbMasterPassword == nil {
+		return nil, errors.New("invalid value for required argument 'DbMasterPassword'")
+	}
 	if args.SubnetIDs == nil {
 		return nil, errors.New("invalid value for required argument 'SubnetIDs'")
 	}
@@ -104,7 +107,7 @@ type ClusterArgs struct {
 	// characters and no more than 64 characters, and must include 1
 	// uppercase letter, 1 lowercase letter, 1 number, and 1 symbol
 	// (excluding / @ \" ').
-	DbMasterPassword string
+	DbMasterPassword pulumi.StringInput
 	// The user name that is associated with the master user account
 	// for the cluster that is being created.
 	DbMasterUsername string

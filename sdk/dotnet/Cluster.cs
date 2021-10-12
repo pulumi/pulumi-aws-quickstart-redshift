@@ -53,7 +53,7 @@ namespace Pulumi.AwsQuickStartRedshift
         public string? DbMaintenanceWindow { get; set; }
 
         [Input("dbMasterPassword", required: true)]
-        private string? _dbMasterPassword;
+        private Input<string>? _dbMasterPassword;
 
         /// <summary>
         /// The password that is associated with the master user account
@@ -62,13 +62,13 @@ namespace Pulumi.AwsQuickStartRedshift
         /// uppercase letter, 1 lowercase letter, 1 number, and 1 symbol
         /// (excluding / @ \" ').
         /// </summary>
-        public string? DbMasterPassword
+        public Input<string>? DbMasterPassword
         {
             get => _dbMasterPassword;
             set
             {
                 var emptySecret = Output.CreateSecret(0);
-                _dbMasterPassword = Output.Tuple<string?, int>(value, emptySecret).Apply(t => t.Item1);
+                _dbMasterPassword = Output.Tuple<Input<string>?, int>(value, emptySecret).Apply(t => t.Item1);
             }
         }
 

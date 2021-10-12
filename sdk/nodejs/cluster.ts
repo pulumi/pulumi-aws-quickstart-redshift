@@ -103,7 +103,7 @@ export interface ClusterArgs {
      * uppercase letter, 1 lowercase letter, 1 number, and 1 symbol
      * (excluding / @ \" ').
      */
-    dbMasterPassword: string;
+    dbMasterPassword: pulumi.Input<string>;
     /**
      * The user name that is associated with the master user account
      * for the cluster that is being created.

@@ -76,7 +76,6 @@ resources:
                     for the cluster that is being created.
             dbMasterPassword:
                 type: string
-                plain: true
                 secret: true
                 description: |
                     The password that is associated with the master user account
