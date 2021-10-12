@@ -1,0 +1,137 @@
+---
+name: aws-quickstart-redshift
+resources:
+    aws-quickstart-redshift:index:Cluster:
+        isComponent: true
+        inputProperties:
+            vpcID:
+                type: string
+                description: |
+                    The VPC with which to create the Redshift Cluster
+            subnetIDs:
+                type: array
+                items:
+                    type: string
+                description: |
+                    The list of subnet IDs in which to deploy the Redshift Cluster
+            dbAccessCidrBlock:
+                type: string
+                plain: true
+                description: |
+                    Allowed CIDR block in the format x.x.x.x/x for external SSH
+                    access to the cluster.
+            dbPort:
+                type: integer
+                plain: true
+                description: |
+                    The port number on which the cluster accepts incoming
+                    connections. Default is 8200
+            maxConcurrentCluster:
+                type: number
+                plain: true
+                description: |
+                    The maximum number of concurrency scaling Redshift
+                    clusters.
+            enableLogging:
+                type: boolean
+                plain: true
+                description: |
+                    Enables or disables logging to an S3 bucket. To enable logging,
+                    select True.
+            glueCatalogDatabaseName:
+                type: string
+                plain: true
+                description: |
+                    The name of your Glue Data Catalog database.
+            redshiftLoggingS3BucketName:
+                type: string
+                plain: true
+                description: |
+                    Name for an S3 bucket for logging. An IAM role will be created and
+                    associated to the Redshift cluster with GET and LIST access to
+                    this bucket.
+            numDbNodes:
+                type: integer
+                plain: true
+                description: |
+                    The number of compute nodes in the cluster. For multi-node
+                    clusters, the NumberOfNodes parameter must be greater than
+                    1.
+            dbName:
+                type: string
+                plain: true
+                description: |
+                    The name of the first database to be created when the cluster
+                    is created.
+            dbNodeType:
+                type: string
+                plain: true
+                description: |
+                    The type of node to be provisioned
+            dbMasterUsername:
+                type: string
+                plain: true
+                description: |
+                    The user name that is associated with the master user account
+                    for the cluster that is being created.
+            dbMasterPassword:
+                type: string
+                plain: true
+                secret: true
+                description: |
+                    The password that is associated with the master user account
+                    for the cluster that is being created. Must have at least 8
+                    characters and no more than 64 characters, and must include 1
+                    uppercase letter, 1 lowercase letter, 1 number, and 1 symbol
+                    (excluding / @ \" ').
+            dbMaintenanceWindow:
+                type: string
+                plain: true
+                description: |
+                    The maintenance window for the Redshift cluster. e.g 'sat:05:00-sat:05:30'
+            publiclyAccessible:
+                type: boolean
+                plain: true
+                description: |
+                    Specifies whether Amazon Redshift will be publicly accessible.
+                    If this option is set to True, the Amazon Redshift cluster will
+                    be created in a public subnet with security group whitelisting
+                    to RemoteAccessCIDR.
+                    If you leave the default option of False, the Amazon Redshift
+                    cluster will be created in a private subnet with security group
+                    whitelisting to VPCCIDR.
+            notificationEmail:
+                type: string
+                plain: true
+                description: |
+                    The email notification list that is used to configure an SNS
+                    topic for sending CloudWatch alarm and event notifications.
+        requiredInputs:
+            - vpcID
+            - subnetIDs
+            - dbAccessCidrBlock
+            - glueCatalogDatabaseName
+            - dbName
+            - dbNodeType
+            - dbMasterUsername
+            - dbMasterPassword
+            - notificationEmail
+language:
+    csharp:
+        packageReferences:
+            Pulumi: 3.*
+            Pulumi.Aws: 4.*
+        namespaces:
+            aws-quickstart-redshift: AwsQuickStartRedshift
+    go:
+        generateResourceContainerTypes: true
+        importBasePath: github.com/pulumi/pulumi-aws-quickstart-redshift/sdk/go/aws
+    nodejs:
+        dependencies:
+            "@pulumi/aws": "^4.5.1"
+        devDependencies:
+            typescript: "^3.7.0"
+    python:
+        requires:
+            pulumi: ">=3.0.0,<4.0.0"
+            pulumi-aws: ">=4.0.0,<5.0.0"
