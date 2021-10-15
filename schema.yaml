@@ -14,18 +14,24 @@ resources:
                     type: string
                 description: |
                     The list of subnet IDs in which to deploy the Redshift Cluster
-            dbAccessCidrBlock:
-                type: string
-                plain: true
+            additionalSecurityGroupID:
+                type: array
+                items:
+                    type: string
                 description: |
-                    Allowed CIDR block in the format x.x.x.x/x for external SSH
-                    access to the cluster.
+                    An additional list of security group IDs to attach to the redshift cluster
             dbPort:
                 type: integer
                 plain: true
                 description: |
                     The port number on which the cluster accepts incoming
                     connections. Default is 8200
+            dbClusterIdentifier:
+                type: string
+                plain: true
+                description: |
+                    The identifier of the Redshift Cluster. Must contain
+                    only lowercase, alphanumeric characters and hyphens.
             maxConcurrentCluster:
                 type: number
                 plain: true
@@ -105,16 +111,22 @@ resources:
                 description: |
                     The email notification list that is used to configure an SNS
                     topic for sending CloudWatch alarm and event notifications.
+            enableEventSubscription:
+                type: boolean
+                plain: true
+                description: |
+                    Set this parameter to `false` if you want to disable Amazon
+                    Redshift Cluster and Instance level event subscriptions. You
+                    might want to disable it if you are testing or running
+                    continuous integration (CI) processes. Default is `true`.
         requiredInputs:
             - vpcID
             - subnetIDs
-            - dbAccessCidrBlock
-            - glueCatalogDatabaseName
+            - dbClusterIdentifier
             - dbName
             - dbNodeType
             - dbMasterUsername
             - dbMasterPassword
-            - notificationEmail
 language:
     csharp:
         packageReferences:

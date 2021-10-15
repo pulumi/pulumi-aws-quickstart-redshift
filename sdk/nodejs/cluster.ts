@@ -31,8 +31,8 @@ export class Cluster extends pulumi.ComponentResource {
         let inputs: pulumi.Inputs = {};
         opts = opts || {};
         if (!opts.id) {
-            if ((!args || args.dbAccessCidrBlock === undefined) && !opts.urn) {
-                throw new Error("Missing required property 'dbAccessCidrBlock'");
+            if ((!args || args.dbClusterIdentifier === undefined) && !opts.urn) {
+                throw new Error("Missing required property 'dbClusterIdentifier'");
             }
             if ((!args || args.dbMasterPassword === undefined) && !opts.urn) {
                 throw new Error("Missing required property 'dbMasterPassword'");
@@ -46,25 +46,21 @@ export class Cluster extends pulumi.ComponentResource {
             if ((!args || args.dbNodeType === undefined) && !opts.urn) {
                 throw new Error("Missing required property 'dbNodeType'");
             }
-            if ((!args || args.glueCatalogDatabaseName === undefined) && !opts.urn) {
-                throw new Error("Missing required property 'glueCatalogDatabaseName'");
-            }
-            if ((!args || args.notificationEmail === undefined) && !opts.urn) {
-                throw new Error("Missing required property 'notificationEmail'");
-            }
             if ((!args || args.subnetIDs === undefined) && !opts.urn) {
                 throw new Error("Missing required property 'subnetIDs'");
             }
             if ((!args || args.vpcID === undefined) && !opts.urn) {
                 throw new Error("Missing required property 'vpcID'");
             }
-            inputs["dbAccessCidrBlock"] = args ? args.dbAccessCidrBlock : undefined;
+            inputs["additionalSecurityGroupID"] = args ? args.additionalSecurityGroupID : undefined;
+            inputs["dbClusterIdentifier"] = args ? args.dbClusterIdentifier : undefined;
             inputs["dbMaintenanceWindow"] = args ? args.dbMaintenanceWindow : undefined;
             inputs["dbMasterPassword"] = args?.dbMasterPassword ? pulumi.secret(args.dbMasterPassword) : undefined;
             inputs["dbMasterUsername"] = args ? args.dbMasterUsername : undefined;
             inputs["dbName"] = args ? args.dbName : undefined;
             inputs["dbNodeType"] = args ? args.dbNodeType : undefined;
             inputs["dbPort"] = args ? args.dbPort : undefined;
+            inputs["enableEventSubscription"] = args ? args.enableEventSubscription : undefined;
             inputs["enableLogging"] = args ? args.enableLogging : undefined;
             inputs["glueCatalogDatabaseName"] = args ? args.glueCatalogDatabaseName : undefined;
             inputs["maxConcurrentCluster"] = args ? args.maxConcurrentCluster : undefined;
@@ -88,10 +84,14 @@ export class Cluster extends pulumi.ComponentResource {
  */
 export interface ClusterArgs {
     /**
-     * Allowed CIDR block in the format x.x.x.x/x for external SSH
-     * access to the cluster.
+     * An additional list of security group IDs to attach to the redshift cluster
      */
-    dbAccessCidrBlock: string;
+    additionalSecurityGroupID?: pulumi.Input<pulumi.Input<string>[]>;
+    /**
+     * The identifier of the Redshift Cluster. Must contain
+     * only lowercase, alphanumeric characters and hyphens.
+     */
+    dbClusterIdentifier: string;
     /**
      * The maintenance window for the Redshift cluster. e.g 'sat:05:00-sat:05:30'
      */
@@ -124,6 +124,13 @@ export interface ClusterArgs {
      */
     dbPort?: number;
     /**
+     * Set this parameter to `false` if you want to disable Amazon
+     * Redshift Cluster and Instance level event subscriptions. You
+     * might want to disable it if you are testing or running
+     * continuous integration (CI) processes. Default is `true`.
+     */
+    enableEventSubscription?: boolean;
+    /**
      * Enables or disables logging to an S3 bucket. To enable logging,
      * select True.
      */
@@ -131,7 +138,7 @@ export interface ClusterArgs {
     /**
      * The name of your Glue Data Catalog database.
      */
-    glueCatalogDatabaseName: string;
+    glueCatalogDatabaseName?: string;
     /**
      * The maximum number of concurrency scaling Redshift
      * clusters.
@@ -141,7 +148,7 @@ export interface ClusterArgs {
      * The email notification list that is used to configure an SNS
      * topic for sending CloudWatch alarm and event notifications.
      */
-    notificationEmail: string;
+    notificationEmail?: string;
     /**
      * The number of compute nodes in the cluster. For multi-node
      * clusters, the NumberOfNodes parameter must be greater than

@@ -40,9 +40,11 @@ func NewCluster(ctx *pulumi.Context,
 }
 
 type clusterArgs struct {
-	// Allowed CIDR block in the format x.x.x.x/x for external SSH
-	// access to the cluster.
-	DbAccessCidrBlock string `pulumi:"dbAccessCidrBlock"`
+	// An additional list of security group IDs to attach to the redshift cluster
+	AdditionalSecurityGroupID []string `pulumi:"additionalSecurityGroupID"`
+	// The identifier of the Redshift Cluster. Must contain
+	// only lowercase, alphanumeric characters and hyphens.
+	DbClusterIdentifier string `pulumi:"dbClusterIdentifier"`
 	// The maintenance window for the Redshift cluster. e.g 'sat:05:00-sat:05:30'
 	DbMaintenanceWindow *string `pulumi:"dbMaintenanceWindow"`
 	// The password that is associated with the master user account
@@ -62,17 +64,22 @@ type clusterArgs struct {
 	// The port number on which the cluster accepts incoming
 	// connections. Default is 8200
 	DbPort *int `pulumi:"dbPort"`
+	// Set this parameter to `false` if you want to disable Amazon
+	// Redshift Cluster and Instance level event subscriptions. You
+	// might want to disable it if you are testing or running
+	// continuous integration (CI) processes. Default is `true`.
+	EnableEventSubscription *bool `pulumi:"enableEventSubscription"`
 	// Enables or disables logging to an S3 bucket. To enable logging,
 	// select True.
 	EnableLogging *bool `pulumi:"enableLogging"`
 	// The name of your Glue Data Catalog database.
-	GlueCatalogDatabaseName string `pulumi:"glueCatalogDatabaseName"`
+	GlueCatalogDatabaseName *string `pulumi:"glueCatalogDatabaseName"`
 	// The maximum number of concurrency scaling Redshift
 	// clusters.
 	MaxConcurrentCluster *float64 `pulumi:"maxConcurrentCluster"`
 	// The email notification list that is used to configure an SNS
 	// topic for sending CloudWatch alarm and event notifications.
-	NotificationEmail string `pulumi:"notificationEmail"`
+	NotificationEmail *string `pulumi:"notificationEmail"`
 	// The number of compute nodes in the cluster. For multi-node
 	// clusters, the NumberOfNodes parameter must be greater than
 	// 1.
@@ -97,9 +104,11 @@ type clusterArgs struct {
 
 // The set of arguments for constructing a Cluster resource.
 type ClusterArgs struct {
-	// Allowed CIDR block in the format x.x.x.x/x for external SSH
-	// access to the cluster.
-	DbAccessCidrBlock string
+	// An additional list of security group IDs to attach to the redshift cluster
+	AdditionalSecurityGroupID pulumi.StringArrayInput
+	// The identifier of the Redshift Cluster. Must contain
+	// only lowercase, alphanumeric characters and hyphens.
+	DbClusterIdentifier string
 	// The maintenance window for the Redshift cluster. e.g 'sat:05:00-sat:05:30'
 	DbMaintenanceWindow *string
 	// The password that is associated with the master user account
@@ -119,17 +128,22 @@ type ClusterArgs struct {
 	// The port number on which the cluster accepts incoming
 	// connections. Default is 8200
 	DbPort *int
+	// Set this parameter to `false` if you want to disable Amazon
+	// Redshift Cluster and Instance level event subscriptions. You
+	// might want to disable it if you are testing or running
+	// continuous integration (CI) processes. Default is `true`.
+	EnableEventSubscription *bool
 	// Enables or disables logging to an S3 bucket. To enable logging,
 	// select True.
 	EnableLogging *bool
 	// The name of your Glue Data Catalog database.
-	GlueCatalogDatabaseName string
+	GlueCatalogDatabaseName *string
 	// The maximum number of concurrency scaling Redshift
 	// clusters.
 	MaxConcurrentCluster *float64
 	// The email notification list that is used to configure an SNS
 	// topic for sending CloudWatch alarm and event notifications.
-	NotificationEmail string
+	NotificationEmail *string
 	// The number of compute nodes in the cluster. For multi-node
 	// clusters, the NumberOfNodes parameter must be greater than
 	// 1.

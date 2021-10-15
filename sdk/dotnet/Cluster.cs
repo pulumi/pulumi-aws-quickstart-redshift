@@ -39,12 +39,24 @@ namespace Pulumi.AwsQuickStartRedshift
 
     public sealed class ClusterArgs : Pulumi.ResourceArgs
     {
+        [Input("additionalSecurityGroupID")]
+        private InputList<string>? _additionalSecurityGroupID;
+
         /// <summary>
-        /// Allowed CIDR block in the format x.x.x.x/x for external SSH
-        /// access to the cluster.
+        /// An additional list of security group IDs to attach to the redshift cluster
         /// </summary>
-        [Input("dbAccessCidrBlock", required: true)]
-        public string DbAccessCidrBlock { get; set; } = null!;
+        public InputList<string> AdditionalSecurityGroupID
+        {
+            get => _additionalSecurityGroupID ?? (_additionalSecurityGroupID = new InputList<string>());
+            set => _additionalSecurityGroupID = value;
+        }
+
+        /// <summary>
+        /// The identifier of the Redshift Cluster. Must contain
+        /// only lowercase, alphanumeric characters and hyphens.
+        /// </summary>
+        [Input("dbClusterIdentifier", required: true)]
+        public string DbClusterIdentifier { get; set; } = null!;
 
         /// <summary>
         /// The maintenance window for the Redshift cluster. e.g 'sat:05:00-sat:05:30'
@@ -100,6 +112,15 @@ namespace Pulumi.AwsQuickStartRedshift
         public int? DbPort { get; set; }
 
         /// <summary>
+        /// Set this parameter to `false` if you want to disable Amazon
+        /// Redshift Cluster and Instance level event subscriptions. You
+        /// might want to disable it if you are testing or running
+        /// continuous integration (CI) processes. Default is `true`.
+        /// </summary>
+        [Input("enableEventSubscription")]
+        public bool? EnableEventSubscription { get; set; }
+
+        /// <summary>
         /// Enables or disables logging to an S3 bucket. To enable logging,
         /// select True.
         /// </summary>
@@ -109,8 +130,8 @@ namespace Pulumi.AwsQuickStartRedshift
         /// <summary>
         /// The name of your Glue Data Catalog database.
         /// </summary>
-        [Input("glueCatalogDatabaseName", required: true)]
-        public string GlueCatalogDatabaseName { get; set; } = null!;
+        [Input("glueCatalogDatabaseName")]
+        public string? GlueCatalogDatabaseName { get; set; }
 
         /// <summary>
         /// The maximum number of concurrency scaling Redshift
@@ -123,8 +144,8 @@ namespace Pulumi.AwsQuickStartRedshift
         /// The email notification list that is used to configure an SNS
         /// topic for sending CloudWatch alarm and event notifications.
         /// </summary>
-        [Input("notificationEmail", required: true)]
-        public string NotificationEmail { get; set; } = null!;
+        [Input("notificationEmail")]
+        public string? NotificationEmail { get; set; }
 
         /// <summary>
         /// The number of compute nodes in the cluster. For multi-node
