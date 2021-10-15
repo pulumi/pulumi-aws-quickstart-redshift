@@ -12,7 +12,6 @@ import (
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/cloudwatch"
 
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws"
-	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/ec2"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/glue"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/iam"
 	"github.com/pulumi/pulumi-aws/sdk/v4/go/aws/redshift"
@@ -22,22 +21,24 @@ import (
 )
 
 type ClusterArgs struct {
-	DbAccessCidrBlock           string             `pulumi:"dbAccessCidrBlock"`
-	DbPort                      int                `pulumi:"dbPort"`
-	MaxConcurrentCluster        string             `pulumi:"maxConcurrentCluster"`
-	EnableLogging               *bool              `pulumi:"enableLogging"`
-	GlueCatalogDatabaseName     string             `pulumi:"glueCatalogDatabaseName"`
-	RedshiftLoggingS3BucketName string             `pulumi:"redshiftLoggingS3BucketName"`
-	NumDbNodes                  int                `pulumi:"numDbNodes"`
-	DbNodeType                  string             `pulumi:"dbNodeType"`
-	DbName                      string             `pulumi:"dbName"`
-	DbMasterUsername            string             `pulumi:"dbMasterUsername"`
-	DbMasterPassword            string             `pulumi:"dbMasterPassword"`
-	DbMaintenanceWindow         string             `pulumi:"dbMaintenanceWindow"`
-	PubliclyAccessible          *bool              `pulumi:"publiclyAccessible"`
-	NotificationList            string             `pulumi:"notificationList"`
-	VpcID                       pulumi.StringInput `pulumi:"vpcID"`
-	SubnetIDs                   pulumi.StringArray `pulumi:"subnetIDs"`
+	DbPort                      int                     `pulumi:"dbPort"`
+	MaxConcurrentCluster        string                  `pulumi:"maxConcurrentCluster"`
+	EnableLogging               *bool                   `pulumi:"enableLogging"`
+	GlueCatalogDatabaseName     string                  `pulumi:"glueCatalogDatabaseName"`
+	RedshiftLoggingS3BucketName string                  `pulumi:"redshiftLoggingS3BucketName"`
+	NumDbNodes                  int                     `pulumi:"numDbNodes"`
+	DbNodeType                  string                  `pulumi:"dbNodeType"`
+	DbName                      string                  `pulumi:"dbName"`
+	DbMasterUsername            string                  `pulumi:"dbMasterUsername"`
+	DbMasterPassword            pulumi.StringInput      `pulumi:"dbMasterPassword"`
+	DbMaintenanceWindow         string                  `pulumi:"dbMaintenanceWindow"`
+	PubliclyAccessible          *bool                   `pulumi:"publiclyAccessible"`
+	NotificationEmail           string                  `pulumi:"notificationEmail"`
+	VpcID                       pulumi.StringInput      `pulumi:"vpcID"`
+	SubnetIDs                   pulumi.StringArrayInput `pulumi:"subnetIDs"`
+	AdditionalSecurityGroupIDs  pulumi.StringArrayInput `pulumi:"additionalSecurityGroupIDs"`
+	EnableEventSubscription     *bool                   `pulumi:"enableEventSubscription"`
+	DbClusterIdentifier         string                  `pulumi:"dbClusterIdentifier"`
 }
 
 type Cluster struct {
@@ -61,33 +62,21 @@ func NewCluster(ctx *pulumi.Context,
 		return nil, err
 	}
 
-	dbSecurityGroup, dbSecurityGroupErr := ec2.NewSecurityGroup(ctx, fmt.Sprintf("%s-allowtls", name), &ec2.SecurityGroupArgs{
-		Description: pulumi.String("Allow TLS inbound traffic to database port"),
-		VpcId:       args.VpcID,
-		Ingress: ec2.SecurityGroupIngressArray{
-			&ec2.SecurityGroupIngressArgs{
-				Description: pulumi.String("TLS DB port for db access cidr"),
-				FromPort:    pulumi.Int(args.DbPort),
-				ToPort:      pulumi.Int(args.DbPort),
-				Protocol:    pulumi.String("tcp"),
-				CidrBlocks: pulumi.StringArray{
-					pulumi.String(args.DbAccessCidrBlock),
-				},
-			},
-		},
-	})
-	if dbSecurityGroupErr != nil {
-		return nil, dbSecurityGroupErr
-	}
-
 	enableUserActivityLogging := "false"
+	enableLogging := false
 	if args.EnableLogging != nil && *args.EnableLogging {
 		enableUserActivityLogging = "true"
+		enableLogging = *args.EnableLogging
 	}
 
 	maxConcurrentCluster := "1"
 	if args.MaxConcurrentCluster != "" {
 		maxConcurrentCluster = args.MaxConcurrentCluster
+	}
+
+	enableEventSubscription := true
+	if args.EnableEventSubscription != nil {
+		enableEventSubscription = *args.EnableEventSubscription
 	}
 
 	redshiftClusterParameterGroup, redshiftClusterParameterGroupErr := redshift.NewParameterGroup(ctx, fmt.Sprintf("%s-cluster-paramter-group", name), &redshift.ParameterGroupArgs{
@@ -115,7 +104,7 @@ func NewCluster(ctx *pulumi.Context,
 				Value: pulumi.String(maxConcurrentCluster),
 			},
 		},
-	})
+	}, pulumi.Parent(component))
 	if redshiftClusterParameterGroupErr != nil {
 		return nil, redshiftClusterParameterGroupErr
 	}
@@ -123,25 +112,27 @@ func NewCluster(ctx *pulumi.Context,
 	redshiftClusterSubnetGroup, redshiftClusterSubnetGroupErr := redshift.NewSubnetGroup(ctx, fmt.Sprintf("%s-redshift-cluster-subnet-group", name), &redshift.SubnetGroupArgs{
 		Description: pulumi.String(fmt.Sprintf("Cluster subnet group %s", name)),
 		SubnetIds:   args.SubnetIDs,
-	})
+	}, pulumi.Parent(component))
 	if redshiftClusterSubnetGroupErr != nil {
 		return nil, redshiftClusterSubnetGroupErr
 	}
 
-	_, catalogDatabaseErr := glue.NewCatalogDatabase(ctx, "glue-catalog", &glue.CatalogDatabaseArgs{
-		CatalogId: pulumi.String(current.AccountId),
-		TargetDatabase: glue.CatalogDatabaseTargetDatabaseArgs{
-			CatalogId:    pulumi.String(current.AccountId),
-			DatabaseName: pulumi.String(args.GlueCatalogDatabaseName),
-		},
-	})
-	if nil != catalogDatabaseErr {
-		return nil, catalogDatabaseErr
+	if args.GlueCatalogDatabaseName != "" {
+		_, catalogDatabaseErr := glue.NewCatalogDatabase(ctx, "glue-catalog", &glue.CatalogDatabaseArgs{
+			CatalogId: pulumi.String(current.AccountId),
+			TargetDatabase: glue.CatalogDatabaseTargetDatabaseArgs{
+				CatalogId:    pulumi.String(current.AccountId),
+				DatabaseName: pulumi.String(args.GlueCatalogDatabaseName),
+			},
+		}, pulumi.Parent(component))
+		if nil != catalogDatabaseErr {
+			return nil, catalogDatabaseErr
+		}
 	}
 
 	var redshiftLoggingInput *redshift.ClusterLoggingArgs
 	var redshiftIamRolesInput pulumi.StringArray
-	if args.EnableLogging != nil && *args.EnableLogging {
+	if enableLogging {
 		redshiftLoggingS3Bucket, redshiftLoggingBucketErr := s3.NewBucket(ctx, fmt.Sprintf("%s-redshift-logging-bucket", name), &s3.BucketArgs{
 			LifecycleRules: s3.BucketLifecycleRuleArray{
 				s3.BucketLifecycleRuleArgs{
@@ -158,7 +149,7 @@ func NewCluster(ctx *pulumi.Context,
 					},
 				},
 			},
-		})
+		}, pulumi.Parent(component))
 		if redshiftLoggingBucketErr != nil {
 			return nil, redshiftLoggingBucketErr
 		}
@@ -199,7 +190,7 @@ func NewCluster(ctx *pulumi.Context,
 		_, redshiftLoggingS3BucketPolicyErr := s3.NewBucketPolicy(ctx, fmt.Sprintf("%s-logging-bucket-policy", name), &s3.BucketPolicyArgs{
 			Bucket: redshiftLoggingS3Bucket.ID(),
 			Policy: bucketPolicyString,
-		})
+		}, pulumi.Parent(component))
 		if redshiftLoggingS3BucketPolicyErr != nil {
 			return nil, redshiftLoggingS3BucketPolicyErr
 		}
@@ -211,7 +202,7 @@ func NewCluster(ctx *pulumi.Context,
 		}
 	}
 
-	if args.EnableLogging != nil && *args.EnableLogging && args.RedshiftLoggingS3BucketName != "" {
+	if enableLogging && args.RedshiftLoggingS3BucketName != "" {
 		iamRolePolicy, err := json.Marshal(
 			map[string]interface{}{
 				"Version": "2012-10-17",
@@ -298,7 +289,7 @@ func NewCluster(ctx *pulumi.Context,
 					Policy: pulumi.String(iamRolePolicy),
 				},
 			},
-		})
+		}, pulumi.Parent(component))
 		if redshiftIamRoleErr != nil {
 			return nil, redshiftIamRoleErr
 		}
@@ -330,19 +321,17 @@ func NewCluster(ctx *pulumi.Context,
 		publiclyAccessible = *args.PubliclyAccessible
 	}
 
-	redshiftCluster, redshiftClusterErr := redshift.NewCluster(ctx, fmt.Sprintf("%s-redshift-cluster", name), &redshift.ClusterArgs{
+	clusterArgs := &redshift.ClusterArgs{
 		ClusterType:       pulumi.String(clusterType),
-		ClusterIdentifier: pulumi.String(args.DbName),
+		ClusterIdentifier: pulumi.String(args.DbClusterIdentifier),
 		NumberOfNodes:     pulumi.Int(numDbNodes),
 		NodeType:          pulumi.String(args.DbNodeType),
 		DatabaseName:      pulumi.String(args.DbName),
 
-		Port:                      pulumi.Int(dbPort),
-		MasterUsername:            pulumi.String(args.DbMasterUsername),
-		MasterPassword:            pulumi.String(args.DbMasterPassword),
-		ClusterParameterGroupName: redshiftClusterParameterGroup.Name,
-
-		VpcSecurityGroupIds:              pulumi.StringArray{dbSecurityGroup.ID()},
+		Port:                             pulumi.Int(dbPort),
+		MasterUsername:                   pulumi.String(args.DbMasterUsername),
+		MasterPassword:                   args.DbMasterPassword,
+		ClusterParameterGroupName:        redshiftClusterParameterGroup.Name,
 		PreferredMaintenanceWindow:       pulumi.String(dbMaintenanceWindow),
 		AutomatedSnapshotRetentionPeriod: pulumi.Int(8),
 		PubliclyAccessible:               pulumi.Bool(publiclyAccessible),
@@ -352,63 +341,71 @@ func NewCluster(ctx *pulumi.Context,
 
 		SkipFinalSnapshot: pulumi.Bool(true),
 		IamRoles:          redshiftIamRolesInput,
-	})
+	}
+	if args.AdditionalSecurityGroupIDs != nil {
+		clusterArgs.VpcSecurityGroupIds = args.AdditionalSecurityGroupIDs
+	}
+
+	redshiftCluster, redshiftClusterErr := redshift.NewCluster(ctx, fmt.Sprintf("%s-redshift-cluster", name),
+		clusterArgs, pulumi.Parent(component))
 	if redshiftClusterErr != nil {
 		return nil, redshiftClusterErr
 	}
 
-	snsTopic, snsTopicErr := sns.NewTopic(ctx, fmt.Sprintf("%s-sns", name), &sns.TopicArgs{})
-	if snsTopicErr != nil {
-		return nil, snsTopicErr
-	}
+	if enableEventSubscription {
+		snsTopic, snsTopicErr := sns.NewTopic(ctx, fmt.Sprintf("%s-sns", name), nil, pulumi.Parent(component))
+		if snsTopicErr != nil {
+			return nil, snsTopicErr
+		}
 
-	snsTopicSubscription, snsTopicSubscriptionErr := sns.NewTopicSubscription(ctx, fmt.Sprintf("%s-sns-topic-subscription", name), &sns.TopicSubscriptionArgs{
-		Topic:    snsTopic,
-		Protocol: pulumi.String("email"),
-		Endpoint: pulumi.String(args.NotificationList),
-	})
-	if snsTopicSubscriptionErr != nil {
-		return nil, snsTopicSubscriptionErr
-	}
+		snsTopicSubscription, snsTopicSubscriptionErr := sns.NewTopicSubscription(ctx, fmt.Sprintf("%s-sns-topic-subscription", name), &sns.TopicSubscriptionArgs{
+			Topic:    snsTopic,
+			Protocol: pulumi.String("email"),
+			Endpoint: pulumi.String(args.NotificationEmail),
+		}, pulumi.Parent(component))
+		if snsTopicSubscriptionErr != nil {
+			return nil, snsTopicSubscriptionErr
+		}
 
-	_, diskSpaceUsedAlarmErr := cloudwatch.NewMetricAlarm(ctx, fmt.Sprintf("%s-disk-space-used-alarm", name), &cloudwatch.MetricAlarmArgs{
-		ActionsEnabled:   pulumi.Bool(true),
-		AlarmActions:     pulumi.Array{snsTopicSubscription.ID()},
-		AlarmDescription: pulumi.String("PercentageDiskSpaceUsed"),
-		Dimensions: pulumi.StringMap{
-			"ClusterIdentifier": redshiftCluster.ID(),
-		},
-		MetricName:         pulumi.String("CPUUtilization"),
-		Statistic:          pulumi.String("Average"),
-		Namespace:          pulumi.String("AWS/Redshift"),
-		Threshold:          pulumi.Float64Ptr(65),
-		Unit:               pulumi.String("Percent"),
-		ComparisonOperator: pulumi.String("GreaterThanThreshold"),
-		Period:             pulumi.Int(300),
-		EvaluationPeriods:  pulumi.Int(3),
-	})
-	if diskSpaceUsedAlarmErr != nil {
-		return nil, diskSpaceUsedAlarmErr
-	}
+		_, diskSpaceUsedAlarmErr := cloudwatch.NewMetricAlarm(ctx, fmt.Sprintf("%s-disk-space-used-alarm", name), &cloudwatch.MetricAlarmArgs{
+			ActionsEnabled:   pulumi.Bool(true),
+			AlarmActions:     pulumi.Array{snsTopicSubscription.ID()},
+			AlarmDescription: pulumi.String("PercentageDiskSpaceUsed"),
+			Dimensions: pulumi.StringMap{
+				"ClusterIdentifier": redshiftCluster.ID(),
+			},
+			MetricName:         pulumi.String("CPUUtilization"),
+			Statistic:          pulumi.String("Average"),
+			Namespace:          pulumi.String("AWS/Redshift"),
+			Threshold:          pulumi.Float64Ptr(65),
+			Unit:               pulumi.String("Percent"),
+			ComparisonOperator: pulumi.String("GreaterThanThreshold"),
+			Period:             pulumi.Int(300),
+			EvaluationPeriods:  pulumi.Int(3),
+		}, pulumi.Parent(component))
+		if diskSpaceUsedAlarmErr != nil {
+			return nil, diskSpaceUsedAlarmErr
+		}
 
-	_, highCpuUtilizationAlarmErr := cloudwatch.NewMetricAlarm(ctx, fmt.Sprintf("%s-high-cpu-utilization-alarm", name), &cloudwatch.MetricAlarmArgs{
-		ActionsEnabled:   pulumi.Bool(true),
-		AlarmActions:     pulumi.Array{snsTopicSubscription.ID()},
-		AlarmDescription: pulumi.String("PercentageDiskSpaceUsed"),
-		Dimensions: pulumi.StringMap{
-			"ClusterIdentifier": redshiftCluster.ID(),
-		},
-		MetricName:         pulumi.String("High-CPUUtilization"),
-		Statistic:          pulumi.String("Average"),
-		Namespace:          pulumi.String("AWS/Redshift"),
-		Threshold:          pulumi.Float64Ptr(95),
-		Unit:               pulumi.String("Percent"),
-		ComparisonOperator: pulumi.String("GreaterThanThreshold"),
-		Period:             pulumi.Int(300),
-		EvaluationPeriods:  pulumi.Int(3),
-	})
-	if highCpuUtilizationAlarmErr != nil {
-		return nil, highCpuUtilizationAlarmErr
+		_, highCpuUtilizationAlarmErr := cloudwatch.NewMetricAlarm(ctx, fmt.Sprintf("%s-high-cpu-utilization-alarm", name), &cloudwatch.MetricAlarmArgs{
+			ActionsEnabled:   pulumi.Bool(true),
+			AlarmActions:     pulumi.Array{snsTopicSubscription.ID()},
+			AlarmDescription: pulumi.String("PercentageDiskSpaceUsed"),
+			Dimensions: pulumi.StringMap{
+				"ClusterIdentifier": redshiftCluster.ID(),
+			},
+			MetricName:         pulumi.String("High-CPUUtilization"),
+			Statistic:          pulumi.String("Average"),
+			Namespace:          pulumi.String("AWS/Redshift"),
+			Threshold:          pulumi.Float64Ptr(95),
+			Unit:               pulumi.String("Percent"),
+			ComparisonOperator: pulumi.String("GreaterThanThreshold"),
+			Period:             pulumi.Int(300),
+			EvaluationPeriods:  pulumi.Int(3),
+		}, pulumi.Parent(component))
+		if highCpuUtilizationAlarmErr != nil {
+			return nil, highCpuUtilizationAlarmErr
+		}
 	}
 
 	if err := ctx.RegisterResourceOutputs(component, pulumi.Map{}); err != nil {
