@@ -1,0 +1,723 @@
+{
+    "version": 3,
+    "deployment": {
+        "manifest": {
+            "time": "2021-10-16T02:52:44.379471824-04:00",
+            "magic": "1e46860be55f4bfa3ee10d1c7370b994c363a4d42c9b706cd8d068a481e22b78",
+            "version": "v3.3.1"
+        },
+        "secrets_providers": {
+            "type": "service",
+            "state": {
+                "url": "https://api.pulumi.com",
+                "owner": "ajhool",
+                "project": "redshift-simple-go",
+                "stack": "dev"
+            }
+        },
+        "resources": [
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::pulumi:pulumi:Stack::redshift-simple-go-dev",
+                "custom": false,
+                "type": "pulumi:pulumi:Stack"
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws-quickstart-vpc::default",
+                "custom": true,
+                "id": "d848ef31-8272-47d6-be96-55f3ff36c544",
+                "type": "pulumi:providers:aws-quickstart-vpc",
+                "inputs": {
+                    "version": "0.0.2"
+                },
+                "outputs": {
+                    "version": "0.0.2"
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "custom": false,
+                "type": "aws-quickstart-vpc:index:Vpc",
+                "outputs": {
+                    "natGatewayIPs": [
+                        "54.159.117.66",
+                        "34.205.218.74"
+                    ],
+                    "privateSubnetIDs": [
+                        "subnet-04163fdab0d6f9d27"
+                    ],
+                    "publicSubnetIDs": [
+                        "subnet-015e8246789f2f6c4",
+                        "subnet-0107d055bdfc51910"
+                    ],
+                    "vpcID": "vpc-0d7066909afbb2e49"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::pulumi:pulumi:Stack::redshift-simple-go-dev"
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default",
+                "custom": true,
+                "id": "9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "type": "pulumi:providers:aws",
+                "inputs": {
+                    "region": "us-east-1",
+                    "version": "4.23.0"
+                },
+                "outputs": {
+                    "region": "us-east-1",
+                    "version": "4.23.0"
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:iam/role:Role::simple-vpc-vpc-flow-log-role",
+                "custom": true,
+                "id": "simple-vpc-vpc-flow-log-role-d4b2db4",
+                "type": "aws:iam/role:Role",
+                "inputs": {
+                    "__defaults": [
+                        "forceDetachPolicies",
+                        "maxSessionDuration",
+                        "name",
+                        "path"
+                    ],
+                    "assumeRolePolicy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"vpc-flow-logs.amazonaws.com\"},\"Sid\":\"\"}],\"Version\":\"2012-10-17\"}",
+                    "forceDetachPolicies": false,
+                    "maxSessionDuration": 3600,
+                    "name": "simple-vpc-vpc-flow-log-role-d4b2db4",
+                    "path": "/"
+                },
+                "outputs": {
+                    "arn": "arn:aws:iam::637593006276:role/simple-vpc-vpc-flow-log-role-d4b2db4",
+                    "assumeRolePolicy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"vpc-flow-logs.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}",
+                    "createDate": "2021-10-16T06:52:26Z",
+                    "description": "",
+                    "forceDetachPolicies": false,
+                    "id": "simple-vpc-vpc-flow-log-role-d4b2db4",
+                    "inlinePolicies": [
+                        {
+                            "name": "",
+                            "policy": ""
+                        }
+                    ],
+                    "managedPolicyArns": [],
+                    "maxSessionDuration": 3600,
+                    "name": "simple-vpc-vpc-flow-log-role-d4b2db4",
+                    "namePrefix": "",
+                    "path": "/",
+                    "tags": {},
+                    "tagsAll": {},
+                    "uniqueId": "AROAZI44BGDCLOPZ367L6"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "assumeRolePolicy": []
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/eip:Eip::simple-vpc-elastic-ip-1",
+                "custom": true,
+                "id": "eipalloc-0a8e3c7edcbf81af0",
+                "type": "aws:ec2/eip:Eip",
+                "inputs": {
+                    "__defaults": [],
+                    "vpc": true
+                },
+                "outputs": {
+                    "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"delete\":180000000000,\"read\":900000000000,\"update\":300000000000}}",
+                    "associationId": "",
+                    "carrierIp": "",
+                    "customerOwnedIp": "",
+                    "customerOwnedIpv4Pool": "",
+                    "domain": "vpc",
+                    "id": "eipalloc-0a8e3c7edcbf81af0",
+                    "instance": "",
+                    "networkBorderGroup": "us-east-1",
+                    "networkInterface": "",
+                    "privateIp": "",
+                    "publicDns": "ec2-34-205-218-74.compute-1.amazonaws.com",
+                    "publicIp": "34.205.218.74",
+                    "publicIpv4Pool": "amazon",
+                    "tags": {},
+                    "tagsAll": {},
+                    "vpc": true
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "vpc": []
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/eip:Eip::simple-vpc-elastic-ip-0",
+                "custom": true,
+                "id": "eipalloc-09983c025d6c24f27",
+                "type": "aws:ec2/eip:Eip",
+                "inputs": {
+                    "__defaults": [],
+                    "vpc": true
+                },
+                "outputs": {
+                    "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"delete\":180000000000,\"read\":900000000000,\"update\":300000000000}}",
+                    "associationId": "",
+                    "carrierIp": "",
+                    "customerOwnedIp": "",
+                    "customerOwnedIpv4Pool": "",
+                    "domain": "vpc",
+                    "id": "eipalloc-09983c025d6c24f27",
+                    "instance": "",
+                    "networkBorderGroup": "us-east-1",
+                    "networkInterface": "",
+                    "privateIp": "",
+                    "publicDns": "ec2-54-159-117-66.compute-1.amazonaws.com",
+                    "publicIp": "54.159.117.66",
+                    "publicIpv4Pool": "amazon",
+                    "tags": {},
+                    "tagsAll": {},
+                    "vpc": true
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "vpc": []
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:cloudwatch/logGroup:LogGroup::simple-vpc-flow-logs",
+                "custom": true,
+                "id": "simple-vpc-flow-logs-4076152",
+                "type": "aws:cloudwatch/logGroup:LogGroup",
+                "inputs": {
+                    "__defaults": [
+                        "name"
+                    ],
+                    "name": "simple-vpc-flow-logs-4076152",
+                    "retentionInDays": 14
+                },
+                "outputs": {
+                    "arn": "arn:aws:logs:us-east-1:637593006276:log-group:simple-vpc-flow-logs-4076152",
+                    "id": "simple-vpc-flow-logs-4076152",
+                    "kmsKeyId": "",
+                    "name": "simple-vpc-flow-logs-4076152",
+                    "retentionInDays": 14,
+                    "tags": {},
+                    "tagsAll": {}
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "retentionInDays": []
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:iam/rolePolicy:RolePolicy::simple-vpc-vpc-flow-log-policy",
+                "custom": true,
+                "id": "simple-vpc-vpc-flow-log-role-d4b2db4:simple-vpc-vpc-flow-log-policy-44e0e71",
+                "type": "aws:iam/rolePolicy:RolePolicy",
+                "inputs": {
+                    "__defaults": [
+                        "name"
+                    ],
+                    "name": "simple-vpc-vpc-flow-log-policy-44e0e71",
+                    "policy": "{\"Statement\":[{\"Action\":[\"logs:CreateLogStream\",\"logs:PutLogEvents\",\"logs:DescribeLogGroups\",\"logs:DescribeLogStreams\"],\"Effect\":\"Allow\",\"Resource\":\"*\"}],\"Version\":\"2012-10-17\"}",
+                    "role": "simple-vpc-vpc-flow-log-role-d4b2db4"
+                },
+                "outputs": {
+                    "id": "simple-vpc-vpc-flow-log-role-d4b2db4:simple-vpc-vpc-flow-log-policy-44e0e71",
+                    "name": "simple-vpc-vpc-flow-log-policy-44e0e71",
+                    "policy": "{\"Statement\":[{\"Action\":[\"logs:CreateLogStream\",\"logs:PutLogEvents\",\"logs:DescribeLogGroups\",\"logs:DescribeLogStreams\"],\"Effect\":\"Allow\",\"Resource\":\"*\"}],\"Version\":\"2012-10-17\"}",
+                    "role": "simple-vpc-vpc-flow-log-role-d4b2db4"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:iam/role:Role::simple-vpc-vpc-flow-log-role"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "role": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:iam/role:Role::simple-vpc-vpc-flow-log-role"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc",
+                "custom": true,
+                "id": "vpc-0d7066909afbb2e49",
+                "type": "aws:ec2/vpc:Vpc",
+                "inputs": {
+                    "__defaults": [
+                        "assignGeneratedIpv6CidrBlock"
+                    ],
+                    "assignGeneratedIpv6CidrBlock": false,
+                    "cidrBlock": "10.0.0.0/16",
+                    "enableDnsHostnames": true,
+                    "enableDnsSupport": true,
+                    "instanceTenancy": "default"
+                },
+                "outputs": {
+                    "__meta": "{\"schema_version\":\"1\"}",
+                    "arn": "arn:aws:ec2:us-east-1:637593006276:vpc/vpc-0d7066909afbb2e49",
+                    "assignGeneratedIpv6CidrBlock": false,
+                    "cidrBlock": "10.0.0.0/16",
+                    "defaultNetworkAclId": "acl-06f14cdbca97557c4",
+                    "defaultRouteTableId": "rtb-02512c34f53713c29",
+                    "defaultSecurityGroupId": "sg-004a41dc1deb728a9",
+                    "dhcpOptionsId": "dopt-0b8fc56c",
+                    "enableClassiclink": false,
+                    "enableClassiclinkDnsSupport": false,
+                    "enableDnsHostnames": true,
+                    "enableDnsSupport": true,
+                    "id": "vpc-0d7066909afbb2e49",
+                    "instanceTenancy": "default",
+                    "ipv6AssociationId": "",
+                    "ipv6CidrBlock": "",
+                    "mainRouteTableId": "rtb-02512c34f53713c29",
+                    "ownerId": "637593006276",
+                    "tags": {},
+                    "tagsAll": {}
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "cidrBlock": [],
+                    "enableDnsHostnames": [],
+                    "enableDnsSupport": [],
+                    "instanceTenancy": []
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-1",
+                "custom": true,
+                "id": "rtb-04977972adb46a104",
+                "type": "aws:ec2/routeTable:RouteTable",
+                "inputs": {
+                    "__defaults": [],
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "outputs": {
+                    "arn": "arn:aws:ec2:us-east-1:637593006276:route-table/rtb-04977972adb46a104",
+                    "id": "rtb-04977972adb46a104",
+                    "ownerId": "637593006276",
+                    "propagatingVgws": [],
+                    "routes": [],
+                    "tags": {},
+                    "tagsAll": {},
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "vpcId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/subnet:Subnet::simple-vpc-private-subnet-a-0",
+                "custom": true,
+                "id": "subnet-04163fdab0d6f9d27",
+                "type": "aws:ec2/subnet:Subnet",
+                "inputs": {
+                    "__defaults": [
+                        "assignIpv6AddressOnCreation",
+                        "mapPublicIpOnLaunch"
+                    ],
+                    "assignIpv6AddressOnCreation": false,
+                    "availabilityZone": "us-east-1a",
+                    "cidrBlock": "10.0.32.0/19",
+                    "mapPublicIpOnLaunch": false,
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "outputs": {
+                    "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"delete\":1200000000000},\"schema_version\":\"1\"}",
+                    "arn": "arn:aws:ec2:us-east-1:637593006276:subnet/subnet-04163fdab0d6f9d27",
+                    "assignIpv6AddressOnCreation": false,
+                    "availabilityZone": "us-east-1a",
+                    "availabilityZoneId": "use1-az2",
+                    "cidrBlock": "10.0.32.0/19",
+                    "customerOwnedIpv4Pool": "",
+                    "id": "subnet-04163fdab0d6f9d27",
+                    "ipv6CidrBlock": "",
+                    "ipv6CidrBlockAssociationId": "",
+                    "mapCustomerOwnedIpOnLaunch": false,
+                    "mapPublicIpOnLaunch": false,
+                    "outpostArn": "",
+                    "ownerId": "637593006276",
+                    "tags": {},
+                    "tagsAll": {},
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "vpcId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-0",
+                "custom": true,
+                "id": "rtb-06de9dce19558b007",
+                "type": "aws:ec2/routeTable:RouteTable",
+                "inputs": {
+                    "__defaults": [],
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "outputs": {
+                    "arn": "arn:aws:ec2:us-east-1:637593006276:route-table/rtb-06de9dce19558b007",
+                    "id": "rtb-06de9dce19558b007",
+                    "ownerId": "637593006276",
+                    "propagatingVgws": [],
+                    "routes": [],
+                    "tags": {},
+                    "tagsAll": {},
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "vpcId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/subnet:Subnet::simple-vpc-public-subnet-0",
+                "custom": true,
+                "id": "subnet-015e8246789f2f6c4",
+                "type": "aws:ec2/subnet:Subnet",
+                "inputs": {
+                    "__defaults": [
+                        "assignIpv6AddressOnCreation",
+                        "mapPublicIpOnLaunch"
+                    ],
+                    "assignIpv6AddressOnCreation": false,
+                    "availabilityZone": "us-east-1a",
+                    "cidrBlock": "10.0.128.0/20",
+                    "mapPublicIpOnLaunch": false,
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "outputs": {
+                    "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"delete\":1200000000000},\"schema_version\":\"1\"}",
+                    "arn": "arn:aws:ec2:us-east-1:637593006276:subnet/subnet-015e8246789f2f6c4",
+                    "assignIpv6AddressOnCreation": false,
+                    "availabilityZone": "us-east-1a",
+                    "availabilityZoneId": "use1-az2",
+                    "cidrBlock": "10.0.128.0/20",
+                    "customerOwnedIpv4Pool": "",
+                    "id": "subnet-015e8246789f2f6c4",
+                    "ipv6CidrBlock": "",
+                    "ipv6CidrBlockAssociationId": "",
+                    "mapCustomerOwnedIpOnLaunch": false,
+                    "mapPublicIpOnLaunch": false,
+                    "outpostArn": "",
+                    "ownerId": "637593006276",
+                    "tags": {},
+                    "tagsAll": {},
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "vpcId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/flowLog:FlowLog::simple-vpc-vpc-flow-log",
+                "custom": true,
+                "id": "fl-0c3dd8dc85f9ba4e9",
+                "type": "aws:ec2/flowLog:FlowLog",
+                "inputs": {
+                    "__defaults": [
+                        "logDestinationType"
+                    ],
+                    "iamRoleArn": "arn:aws:iam::637593006276:role/simple-vpc-vpc-flow-log-role-d4b2db4",
+                    "logDestination": "arn:aws:logs:us-east-1:637593006276:log-group:simple-vpc-flow-logs-4076152",
+                    "logDestinationType": "cloud-watch-logs",
+                    "logFormat": "${version} ${account-id} ${interface-id} ${srcaddr} ${dstaddr} ${srcport} ${dstport} ${protocol} ${packets} ${bytes} ${start} ${end} ${action} ${log-status}",
+                    "maxAggregationInterval": 600,
+                    "trafficType": "REJECT",
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "outputs": {
+                    "arn": "arn:aws:ec2:us-east-1:637593006276:vpc-flow-log/fl-0c3dd8dc85f9ba4e9",
+                    "iamRoleArn": "arn:aws:iam::637593006276:role/simple-vpc-vpc-flow-log-role-d4b2db4",
+                    "id": "fl-0c3dd8dc85f9ba4e9",
+                    "logDestination": "arn:aws:logs:us-east-1:637593006276:log-group:simple-vpc-flow-logs-4076152",
+                    "logDestinationType": "cloud-watch-logs",
+                    "logFormat": "${version} ${account-id} ${interface-id} ${srcaddr} ${dstaddr} ${srcport} ${dstport} ${protocol} ${packets} ${bytes} ${start} ${end} ${action} ${log-status}",
+                    "logGroupName": "simple-vpc-flow-logs-4076152",
+                    "maxAggregationInterval": 600,
+                    "tags": {},
+                    "tagsAll": {},
+                    "trafficType": "REJECT",
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:cloudwatch/logGroup:LogGroup::simple-vpc-flow-logs",
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc",
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:iam/role:Role::simple-vpc-vpc-flow-log-role"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "iamRoleArn": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:iam/role:Role::simple-vpc-vpc-flow-log-role"
+                    ],
+                    "logDestination": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:cloudwatch/logGroup:LogGroup::simple-vpc-flow-logs"
+                    ],
+                    "vpcId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/subnet:Subnet::simple-vpc-public-subnet-1",
+                "custom": true,
+                "id": "subnet-0107d055bdfc51910",
+                "type": "aws:ec2/subnet:Subnet",
+                "inputs": {
+                    "__defaults": [
+                        "assignIpv6AddressOnCreation",
+                        "mapPublicIpOnLaunch"
+                    ],
+                    "assignIpv6AddressOnCreation": false,
+                    "availabilityZone": "us-east-1b",
+                    "cidrBlock": "10.0.64.0/19",
+                    "mapPublicIpOnLaunch": false,
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "outputs": {
+                    "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":600000000000,\"delete\":1200000000000},\"schema_version\":\"1\"}",
+                    "arn": "arn:aws:ec2:us-east-1:637593006276:subnet/subnet-0107d055bdfc51910",
+                    "assignIpv6AddressOnCreation": false,
+                    "availabilityZone": "us-east-1b",
+                    "availabilityZoneId": "use1-az4",
+                    "cidrBlock": "10.0.64.0/19",
+                    "customerOwnedIpv4Pool": "",
+                    "id": "subnet-0107d055bdfc51910",
+                    "ipv6CidrBlock": "",
+                    "ipv6CidrBlockAssociationId": "",
+                    "mapCustomerOwnedIpOnLaunch": false,
+                    "mapPublicIpOnLaunch": false,
+                    "outpostArn": "",
+                    "ownerId": "637593006276",
+                    "tags": {},
+                    "tagsAll": {},
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "vpcId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/internetGateway:InternetGateway::simple-vpc-internet-gateway",
+                "custom": true,
+                "id": "igw-0d322198602cb2626",
+                "type": "aws:ec2/internetGateway:InternetGateway",
+                "inputs": {
+                    "__defaults": [],
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "outputs": {
+                    "arn": "arn:aws:ec2:us-east-1:637593006276:internet-gateway/igw-0d322198602cb2626",
+                    "id": "igw-0d322198602cb2626",
+                    "ownerId": "637593006276",
+                    "tags": {},
+                    "tagsAll": {},
+                    "vpcId": "vpc-0d7066909afbb2e49"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "vpcId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/vpc:Vpc::simple-vpc-vpc"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTableAssociation:RouteTableAssociation::simple-vpc-public-route-table-association-0",
+                "custom": true,
+                "id": "rtbassoc-043be7821a59a5dec",
+                "type": "aws:ec2/routeTableAssociation:RouteTableAssociation",
+                "inputs": {
+                    "__defaults": [],
+                    "routeTableId": "rtb-06de9dce19558b007",
+                    "subnetId": "subnet-015e8246789f2f6c4"
+                },
+                "outputs": {
+                    "gatewayId": "",
+                    "id": "rtbassoc-043be7821a59a5dec",
+                    "routeTableId": "rtb-06de9dce19558b007",
+                    "subnetId": "subnet-015e8246789f2f6c4"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-0",
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/subnet:Subnet::simple-vpc-public-subnet-0"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "routeTableId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-0"
+                    ],
+                    "subnetId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/subnet:Subnet::simple-vpc-public-subnet-0"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTableAssociation:RouteTableAssociation::simple-vpc-public-route-table-association-1",
+                "custom": true,
+                "id": "rtbassoc-08b461f7efccc0e1f",
+                "type": "aws:ec2/routeTableAssociation:RouteTableAssociation",
+                "inputs": {
+                    "__defaults": [],
+                    "routeTableId": "rtb-04977972adb46a104",
+                    "subnetId": "subnet-0107d055bdfc51910"
+                },
+                "outputs": {
+                    "gatewayId": "",
+                    "id": "rtbassoc-08b461f7efccc0e1f",
+                    "routeTableId": "rtb-04977972adb46a104",
+                    "subnetId": "subnet-0107d055bdfc51910"
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-1",
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/subnet:Subnet::simple-vpc-public-subnet-1"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "routeTableId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-1"
+                    ],
+                    "subnetId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/subnet:Subnet::simple-vpc-public-subnet-1"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/route:Route::simple-vpc-public-route-1",
+                "custom": true,
+                "id": "r-rtb-04977972adb46a1041080289494",
+                "type": "aws:ec2/route:Route",
+                "inputs": {
+                    "__defaults": [],
+                    "destinationCidrBlock": "0.0.0.0/0",
+                    "gatewayId": "igw-0d322198602cb2626",
+                    "routeTableId": "rtb-04977972adb46a104"
+                },
+                "outputs": {
+                    "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":120000000000,\"delete\":300000000000}}",
+                    "carrierGatewayId": "",
+                    "destinationCidrBlock": "0.0.0.0/0",
+                    "destinationIpv6CidrBlock": "",
+                    "destinationPrefixListId": "",
+                    "egressOnlyGatewayId": "",
+                    "gatewayId": "igw-0d322198602cb2626",
+                    "id": "r-rtb-04977972adb46a1041080289494",
+                    "instanceId": "",
+                    "instanceOwnerId": "",
+                    "localGatewayId": "",
+                    "natGatewayId": "",
+                    "networkInterfaceId": "",
+                    "origin": "CreateRoute",
+                    "routeTableId": "rtb-04977972adb46a104",
+                    "state": "active",
+                    "transitGatewayId": "",
+                    "vpcEndpointId": "",
+                    "vpcPeeringConnectionId": ""
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/internetGateway:InternetGateway::simple-vpc-internet-gateway",
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-1"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "gatewayId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/internetGateway:InternetGateway::simple-vpc-internet-gateway"
+                    ],
+                    "routeTableId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-1"
+                    ]
+                }
+            },
+            {
+                "urn": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/route:Route::simple-vpc-public-route-0",
+                "custom": true,
+                "id": "r-rtb-06de9dce19558b0071080289494",
+                "type": "aws:ec2/route:Route",
+                "inputs": {
+                    "__defaults": [],
+                    "destinationCidrBlock": "0.0.0.0/0",
+                    "gatewayId": "igw-0d322198602cb2626",
+                    "routeTableId": "rtb-06de9dce19558b007"
+                },
+                "outputs": {
+                    "__meta": "{\"e2bfb730-ecaa-11e6-8f88-34363bc7c4c0\":{\"create\":120000000000,\"delete\":300000000000}}",
+                    "carrierGatewayId": "",
+                    "destinationCidrBlock": "0.0.0.0/0",
+                    "destinationIpv6CidrBlock": "",
+                    "destinationPrefixListId": "",
+                    "egressOnlyGatewayId": "",
+                    "gatewayId": "igw-0d322198602cb2626",
+                    "id": "r-rtb-06de9dce19558b0071080289494",
+                    "instanceId": "",
+                    "instanceOwnerId": "",
+                    "localGatewayId": "",
+                    "natGatewayId": "",
+                    "networkInterfaceId": "",
+                    "origin": "CreateRoute",
+                    "routeTableId": "rtb-06de9dce19558b007",
+                    "state": "active",
+                    "transitGatewayId": "",
+                    "vpcEndpointId": "",
+                    "vpcPeeringConnectionId": ""
+                },
+                "parent": "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc::simple-vpc",
+                "dependencies": [
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/internetGateway:InternetGateway::simple-vpc-internet-gateway",
+                    "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-0"
+                ],
+                "provider": "urn:pulumi:dev::redshift-simple-go::pulumi:providers:aws::default::9b226426-d68a-4e36-a29a-1a7535294ccd",
+                "propertyDependencies": {
+                    "gatewayId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/internetGateway:InternetGateway::simple-vpc-internet-gateway"
+                    ],
+                    "routeTableId": [
+                        "urn:pulumi:dev::redshift-simple-go::aws-quickstart-vpc:index:Vpc$aws:ec2/routeTable:RouteTable::simple-vpc-public-route-table-0"
+                    ]
+                }
+            }
+        ],
+        "pending_operations": [
+        ]
+    }
+}
