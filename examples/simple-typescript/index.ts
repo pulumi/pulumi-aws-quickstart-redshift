@@ -4,6 +4,7 @@ import * as redshift from "@pulumi/aws-quickstart-redshift";
 
 const dbMasterPassword = "?SimpleExamplePassword12345?"
 const dbPasswordSecret = pulumi.secret(dbMasterPassword);
+const notificationEmail = "YOUR_EMAIL_ADDRESS";
 
 const multiAvailabilityZoneVpc = new vpc.Vpc("example-aurora-vpc", {
     cidrBlock: "10.0.0.0/16",
@@ -25,7 +26,7 @@ const cluster = new redshift.Cluster("example-redshift-cluster", {
   dbPort: 5432,
   dbClusterIdentifier: "example-redshift-cluster",  
   dbMasterUsername: "mainuser",
-  notificationEmail: "aidan@hool.co",
+  notificationEmail: notificationEmail,
   enableEventSubscription: true,
   dbMasterPassword: dbPasswordSecret,
   dbName: "main",
