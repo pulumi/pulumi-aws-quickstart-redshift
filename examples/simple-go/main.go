@@ -13,7 +13,7 @@ func main() {
 		privateSubnet1ACidr := "10.0.32.0/19"
 		publicSubnet2Cidr := "10.0.64.0/19"
 
-		databaseNotificationEmail := "aidan@hool.co"
+		databaseNotificationEmail := "YOUR_EMAIL_ADDRESS"
 		enableEventSubscription := true
 
 		vpc, err := quickstartVpc.NewVpc(ctx, "simple-vpc", &quickstartVpc.VpcArgs{
