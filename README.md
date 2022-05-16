@@ -1,4 +1,4 @@
-# Pulumi AWS Aurora Postgres
+# Pulumi AWS Aurora Redshift
 
 Easily deploy an Amaon Redshift data warehouse for big data analytics, with accompanying features like alarms, logging, encryption, and multi-AZ redundancy. This component is based on the best practices recommended by AWS in the [Modular architecture for Amazon Redshift](https://aws.amazon.com/quickstart/architecture/amazon-redshift/)
 
