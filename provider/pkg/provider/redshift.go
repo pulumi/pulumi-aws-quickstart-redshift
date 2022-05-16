@@ -369,7 +369,7 @@ func NewCluster(ctx *pulumi.Context,
 
 		_, diskSpaceUsedAlarmErr := cloudwatch.NewMetricAlarm(ctx, fmt.Sprintf("%s-disk-space-used-alarm", name), &cloudwatch.MetricAlarmArgs{
 			ActionsEnabled:   pulumi.Bool(true),
-			AlarmActions:     pulumi.Array{snsTopicSubscription.ID()},
+			AlarmActions:     pulumi.Array{snsTopic.Arn},
 			AlarmDescription: pulumi.String("PercentageDiskSpaceUsed"),
 			Dimensions: pulumi.StringMap{
 				"ClusterIdentifier": redshiftCluster.ID(),
